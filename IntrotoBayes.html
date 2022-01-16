@@ -360,20 +360,25 @@ pre code {
 </div>
 <div id="objectives" class="section level3">
 <h3>Objectives</h3>
-<p>This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students unfamiliar or uncomfortable with statistics in general. To that end, I wrote this module with the following objectives in mind…<br />
+<p>This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive summary but rather as a means of entry that hopefully will give you confidence to further explore these concepts further. To that end, I wrote this module with the following objectives in mind…<br />
    1) To provide a broad, introductory description of Bayesian philosophy.<br />
    2) To breakdown the mechanisms by which Bayesian statistics functions as well as provide a brief summary of one of its most commonly used tools, Markov chain Monte Carlo simulations.<br />
    3) To differentiate a Bayesian approach from the more commonly taught Frequentist approach.<br />
-   (4) To force myself to learn RMarkdown)</p>
+   <em>4) To force myself to learn RMarkdown (This one is just for me)</em></p>
 </div>
-<div id="section" class="section level3">
-<h3></h3>
-<p>Before we jump head first into math and philosophy, let’s first go over basic nomenclature and symbols you will encounter within this module. For those familiar with probabilities and statistics, this will be a review for you.</p>
-<p>test</p>
-<p>test2</p>
+<div id="common-nomenclature-and-symbols" class="section level3">
+<h3>Common Nomenclature and Symbols</h3>
+<p>Before we jump head first into statistical philosophy, let’s first take a moment to make sure we all have a baseline understanding on how to read probabilities andgo over basic nomenclature and symbols you will encounter within this module. For those familiar with probabilities and statistics, this will be a review for you.</p>
+<p>[COME BACK TO THIS AFTER EVERYTHING IS WRITTEN AND BREAKDOWN]</p>
 </div>
-<div id="a-broad-definition" class="section level3">
-<h3>A broad definition:</h3>
+<div id="lets-get-started" class="section level3">
+<h3>Let’s get started:</h3>
+<p>If you have made it this far, I assume you are either being forced to at gunpoint or you are a graduate student with a need or desire to better understand your options when conducting analysis for your research. While we may all have very different study systems and animals, we likely all have some things in common. First, we had to write a research proposal describing a statistical approach that we did not yet understand because our adviser suggested it to us. Second, we have a series of questions we hope to answer to aid in the management of our systems. And third, we possess (or will collect) a data set representing known information about our systems which will allow us to answer our research questions.</p>
+<p>For example, I studied population and movement ecology of game birds during graduate school. My research questions focused on the composition and distribution of wild turkey populations, such as how they use different land cover types during various seasons. To that end, I collected data on turkey locations using GPS and VHF radio-telemetry which, in combination with remotely sensed data products such as the National Land Cover Database, represented the data I had available to answer my research questions.</p>
+<p>[Need some segue here]. For any system that we wish to study, information can be broken down into two categories: what is known and what is unknown. In the case of our turkey example, the knowns are the individual turkey location data and the associated land cover information. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe turkey sex or age affects their decision-making process? What about time of day? For the sake of all of us being on the same page, lets use this system and data as an example throughout this module. Specifically, you wish to know the magnitude of the effect of snow depth on turkey use of forested land cover.</p>
+<p>So now we have our data and the research questions we wish to answer, but we still need to determine how we will approach our analysis. Within the field of ecology, we tend to choose an approach that can fall within one of two paradigms, Bayesian or Frequentist statistics. While there are many similarities and distinctions between the two (which we will summarize at the end of this module), one fundamental difference focuses on how we treat the relationship between our known and unknown information.</p>
+<p>A Frequentist would look at our turkey resource selection question and say that there is some fixed parameter, , that describes the effect size of snow depth on turkey selection. By fixed, we mean that there is some true value for this effect size that applies to our study system. We then treat our collected data, y, as random variables which are drawn from some larger pool of possible values. In this way, we can account for randomness in data collection associated with things such as errors in data collection or influences of unmeasured effects. Probabilsitically, this would be written as <span class="math inline">\(Pr(y|\theta)\)</span> and read as “the probability of given data.” [On the right track but need to go and double check my definition of frequentist]</p>
+<p>A Bayesian on teh other hand treats and y in the reverse, <span class="math inline">\(Pr(\theta|y)\)</span></p>
 </div>
 <div id="bayes-theorem" class="section level3">
 <h3>Bayes Theorem:</h3>
