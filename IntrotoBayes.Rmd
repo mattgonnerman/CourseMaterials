@@ -1,7 +1,7 @@
 ---
-title: "Intro to Bayesian Stats"
+title: "A Broad Introduction to Bayesian Statistics"
 author: "Matthew Gonnerman"
-date: "1/7/2022"
+date: "1/16/2022"
 output: html_document
 ---
 
@@ -9,8 +9,114 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Objective:
+_A Note to Readers: This module is a work in progress_
 
-The objective of this module is to 1) provide an introduction to Bayesian statistics aimed at a ecology/wildlife/fisheries graduate student level and 2) to highlight the similarities and differences between Bayesian and Frequentist statistics. 
+### Outline:
+[Objectives]      
+[Sources]
+
+### Objectives
+
+This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. To that end, I wrote this module with the following objectives in mind...  
+&ensp;&ensp;&ensp;1) To provide a broad, introductory description of Bayesian philosophy.  
+&ensp;&ensp;&ensp;2) To breakdown the mechanisms by which Bayesian statistics functions as well as provide a brief summary of one of its most commonly used tools, Markov chain Monte Carlo simulations.  
+&ensp;&ensp;&ensp;3) To differentiate a Bayesian approach from the more commonly taught Frequentist approach.  
+&ensp;&ensp;&ensp;_4) To force myself to learn RMarkdown (This one is just for me)_ 
+
+### Common Nomenclature and Symbols
+Before we jump head first into statistical philosophy, let's first take a moment to make sure we all have a baseline understanding on how to read probabilities andgo over basic nomenclature and symbols you will encounter within this module. For those familiar with probabilities and statistics, this will be a review for you.  
+  
+[COME BACK TO THIS AFTER EVERYTHING IS WRITTEN AND BREAKDOWN]
+
+### Let's get started:
+
+If you have made it this far, I assume you are either being forced to at gunpoint or you are a graduate student with a need or desire to better understand your options when conducting analysis for your research. While we may all have very different study systems and animals, we likely all have some things in common. First, we probably had to write a research proposal describing a statistical approach that we did not yet understand because our adviser suggested it to us. Second, we have a series of questions we hope to answer to aid in the management of our systems. And third, we possess (or will collect) a data set representing known information about our systems which will allow us to answer our research questions. 
+
+For example, I studied population and movement ecology of game birds during graduate school. My research questions focused on the composition and distribution of wild turkey populations, such as how they use different land cover types during different times of the year. To that end, I collected data on turkey locations using GPS and VHF radio-telemetry which, in combination with remotely sensed data products such as the National Land Cover Database, represented the data I had available to answer my questions.
+
+But before we For any system that we wish to study, information can be broken down into two categories: what is known and what is unknown. Known information will primarily be limited any data that we collect or has been collected. How we choose to approach these tw
+
+[Observed and Unobserved parameters]
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### Bayes Theorem:
+[Why is it called bayesian statistics?]
+
+$$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
+[What are theta and y in this scenario] [Theta = unobserved] [y = observed]
+
+
+### In plain english...
+Without focusing on the individual components of the equation, it states...
+
+
+### The Components
+[Statistical Rethinking pf 36?]
+
+Now that we understand what the equation says, lets examine the individual components and how they help reach that conclusion...
+
+
+
+**Prior Distribution** - 
+
+$$ \sum_j{Pr(y|\theta_j)} Pr(\theta_j) $$
+
+### Why does this work?
+Bayes theorem centers around the probability of theta and y both occuring at the same time, otherwise written as $Pr(y,\theta)$. [Green et al. has a good walkthrough on pg3]
+
+[Avoid overloading with equations here, try to just talk it out and point to more specific examples]
+
+
+### An Example:
+To provide a more tangible example, lets apply Bayes theorem to a simple example. Assume...
+
+
+### Bayesian vs Frequentist vs Maximum Likelihood
+
+[Kery and Schaub - Bayesian pop analysis ch 2.4]
+
+[Held and Bove - Likelihood and Bayesian Inference ch 3]
+
+[Hobbs and Hooten - 4.2 Likelihood profiles] 
+
+
+### Sources and Further Reading
+
+This module is a synthesis of the sources listed below.  
+&ensp;&ensp;&ensp;???
+
+For a more in depth discussion of the topics covered in this module, I have found the below resources very useful in furhtering my understanding of statistics.  
+&ensp;&ensp;&ensp;
