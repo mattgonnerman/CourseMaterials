@@ -5,6 +5,7 @@ date: "1/16/2022"
 output:
   html_document: default
   pdf_document: default
+  df_print: kable
 ---
 
 ```{r setup, include=FALSE}
@@ -18,10 +19,14 @@ _A Note to Readers: This module is a work in progress_
 [Known and Unknown Information]  
 [A Frequentist Approach]  
 [A Bayesian Approach]  
+[MCMC: Sampling from the Posterior]  
+[Bayesian vs Frequentist]  
+[Sources and Other Resources]  
 
 ### Objectives
 
-This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive description but rather as a means of entry that hopefully will give you confidence to further explore these concepts. I have stripped away much of the details about methods and derivation of equations to make this more of a summary of how different statistical philosophies approach a problem. To that end, I wrote this module with the following objectives in mind...  
+This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive description but rather as a means of entry that hopefully will give you confidence to further explore these concepts. I have stripped away much of the details about methods and derivation of equations to make this more of a summary of how different statistical philosophies approach a problem. To that end, I wrote this module with the following objectives in mind...   
+  
 <div style="margin-left: 1em;"> 1) To provide a broad, introductory description of Bayesian philosophy.  
 2) To breakdown the mechanisms by which Bayesian statistics functions as well as provide a brief summary of one of its most commonly used tools, Markov chain Monte Carlo simulations.  
 3) To differentiate a Bayesian approach from the more commonly taught Frequentist approach.  
@@ -33,7 +38,7 @@ If you are reading this module, I assume you are either being forced to or you a
 
 Regardless of the system we wish to study, information can be broken down into two categories: what is known and what is unknown. In the case of our turkey example, the knowns are turkey locations, individual turkey characteristics, and associated land cover at each location. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe a turkey's sex or age affects their decision-making process? What about time of day? While in practice these decisions can be described using increasingly complex modeling techniques, we can simplify a decision to a weighted coin flip describing whether a turkey would select one option over another. For the sake of being on the same page, lets use this system and data as an example throughout the module to describe these coin flips. Specifically, we wish to know how much the presence of snow impacts a turkey's use of forested over other land cover options. 
 
-So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. While there are many similarities and distinctions between the two (which we will summarize at the end of this module), let's take a 10,000 ft view of how each approaches known and unknown information.
+So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. There are many similarities and distinctions  in the methods used between the two (which we will summarize at the end of this module), but the core difference lies in how each approaches known and unknown information. 
 
 ### A Frequentist Approach
 
@@ -45,26 +50,25 @@ Estimating the value for $\theta$ that maximizes the likelihood is only half of 
 
 ### A Bayesian Approach
 
-A Bayesian approach is going to start in a very similar place as a frequentist one. We have known data (y), a parameter we wish to describe ($\theta$), and a model defining our hypothesized relationship between the two. Where bayesian deviates from frequentist is in how we treat $\theta$. Instead of seeking to define a fixed value around which there is some uncertainty (i.e. Frequentist), we instead are looking to define some probability distribution that describes [A key distinction here is that we are not seeking some fixed value of ] We can approach this problem by considering the probability of our data and $\theta$ occuring together or $P(y, \theta)$.  
-
-$$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
+A Bayesian approach is going to start in a very similar place as a frequentist one. We have known data (y), a parameter we wish to describe ($\theta$), and a model defining our hypothesized relationship between the two. Where we will deviate from frequentist is in how we treat $\theta$. Instead of seeking to define a fixed value around which there is some uncertainty (i.e. Frequentist), we instead are looking to define some probability distribution that describes our parameter. This distinction may not be immediately obvious, but it affects how we describe our results. Whereas frequentists make statements about the probability of observing certain data given values of $\theta$, a bayesian makes statements about the probability that $\theta$ on a specific value.
 
 #### Bayes Theorem:
+Moving on from the philosophical differences in how we describe results, let's discus how a bayesian approach actually differs in practice. To understand this, we will need to to use probability theory. We can approach our question by considering the probability of our data and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rederived and written a number of different ways, shown below...   
+
+$$ P(y, \theta) = Pr(\theta|y)Pr(y) = Pr(y|\theta) Pr(\theta)$$  
+
+When we breakdown these probability statements, we find that the probability of both y and $\theta$ occurring together is the same as the probability of y occurring multiplied by the probability of $\theta$ occurring given that y also occurs (or vice versa). Using basic algebra, we can rearrange our equation to create the below statement, also referred to as Bayes Theorem.  
+
 
 $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
 
 
-
-### In plain english...
-Without focusing on the individual components of the equation, it states...
-
-
-### The Components
+#### The Components
 [Statistical Rethinking pf 36?]
 
 Now that we understand what the equation says, lets examine the individual components and how they help reach that conclusion...
 
-
+**Posterior Distribution** - 
 
 **Prior Distribution** - 
 
@@ -73,15 +77,12 @@ $$ \sum_j{Pr(y|\theta_j)} Pr(\theta_j) $$
 ### Why does this work?
 Bayes theorem centers around the probability of theta and y both occuring at the same time, otherwise written as $Pr(y,\theta)$. [Green et al. has a good walkthrough on pg3]
 
-
-
-### An Example:
-To provide a more tangible example, lets apply Bayes theorem to a simple example. Assume...
+### MCMC: Sampling from the Posterior
 
 
 ### Bayesian vs Frequentist
 
-So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets identify the aspects of each that are similar and different from one another. 
+So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets get into more detail on the similarities and differences between them.
 
 [Kery and Schaub - Bayesian pop analysis ch 2.4]
 
@@ -91,10 +92,24 @@ So now that you have at least a broad understanding of the differences in philos
 
 [Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory] 
 
-### Sources and Further Reading
+### Sources and Other Resources
 
-This module is a synthesis of the sources listed below.  
-&ensp;&ensp;&ensp;???
-
-For a more in depth discussion of the topics covered in this module, I have found the below resources very useful in furhtering my understanding of statistics.  
-&ensp;&ensp;&ensp;
+This module is a synthesis of ...
+  
+<div style="margin-left: 1em;">  
+  Hobbs and Hooten - Bayesian Models: A Statistical primer for Ecologists  
+  McElreath - Statistical Rethinking: A Bayesian Course with Examples in R and Stan  
+  Kery - Introduction to WinBUGS for Ecologists: A Bayesian approach to regression, ANOVA, mixed models and related analyses  
+  Kery and Schaub - Bayesian Population Analysis using WinBUGS: A Hierarchical Perspective
+</div>
+  
+I have also found the below resources useful in better understanding bayesian concepts and applications. 
+  
+  <div style="margin-left: 1em;">  
+  [Olivier Giminez's Youtube Channel](https://www.youtube.com/c/OlivierGimenez)  
+  [Richard McElreath's Youtube Channel](https://www.youtube.com/channel/UCNJK6_DZvcMqNSzQdEkzvzA/about)  
+  [ritvikmath Youtube Channel](https://www.youtube.com/c/ritvikmath)  
+  [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/frequentist-vs-bayesian-statistics-resources-to-help-you-choose/)  
+  [McGill 2013 - Why saying you are a bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-bayesian-is-a-low-information-statement/)  
+      
+  </div>
