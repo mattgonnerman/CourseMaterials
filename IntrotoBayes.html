@@ -362,7 +362,7 @@ pre code {
 </div>
 <div id="objectives" class="section level3">
 <h3>Objectives</h3>
-This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive summary but rather as a means of entry that hopefully will give you confidence to further explore these concepts further. I have stripped away much of the detail to provide you with what I believe is the core information is most helpful for understanding these concepts. To that end, I wrote this module with the following objectives in mind…<br />
+This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive description but rather as a means of entry that hopefully will give you confidence to further explore these concepts. I have stripped away much of the details about methods and derivation of equations to make this more of a summary of how different statistical philosophies approach a problem. To that end, I wrote this module with the following objectives in mind…<br />
 
 <div style="margin-left: 1em;">
 <ol style="list-style-type: decimal">
@@ -386,14 +386,13 @@ This module is intended as a starting point for learning about Bayesian statisti
 <h3>A Frequentist Approach</h3>
 <p>A frequentist would look at our turkey resource selection question and say that there is some fixed parameter, <span class="math inline">\(\theta\)</span>, that describes the effect size of snow depth on selection for forests. By fixed, we mean that there is some true value for <span class="math inline">\(\theta\)</span> that applies to our study system. We do not know it, but it exists (even if it is 0). We then treat our collected data, y, as random variables which are drawn from some larger pool of possible data. The data is random because if we were to go back out and collect new data, we would almost certainly get a different data set due to any number of factors such as measurement error, predator presence, or individual behavioral differences. We can describe the relationship between our known and unknown information using a probability statement, <span class="math inline">\(Pr(y|\theta)\)</span>, which reads “the probability of collecting our observed data assuming some unknwon value for <span class="math inline">\(\theta\)</span>.”</p>
 <p>This probability statement alone doesn’t do much for us because we don’t know what <span class="math inline">\(\theta\)</span> is. However, it can be rewritten as a <strong>likelihood function</strong>, <span class="math inline">\(L(\theta|y)\)</span>, which now makes our parameter dependent on the data we collected. This reads as “the likelihood of a parameter value given the data” and is equivalent to our probability statement, <span class="math inline">\(L(\theta|y) = Pr(y|\theta)\)</span>. By re-framing our known and unknown information in this way, we can ask what value of <span class="math inline">\(\theta\)</span> is the most likely to be true given the data we collected. By reversing the dependencies, we can use our model to ask how likely our data set is for a given value of of <span class="math inline">\(\theta\)</span>. In terms of our research question, what relationship between turkey habitat selection and snow best describes the location information that we collected. We can compare likelihoods across different values for <span class="math inline">\(\theta\)</span> to find which value maximizes the likelihood. The exact steps to this process are more involved and involve some math that I will not cover here, but for more information search for <strong>Maximum Likelihood Estimators (MLE)</strong>.</p>
-<p>Estimating the value for <span class="math inline">\(\theta\)</span> that maximizes the likelihood is only half of what we need to answer our research question. The other half is describing our uncertainty in that estimate. Again, the exact methods used within MLE to determine uncertainty are not relevant. What is important to understand is that any measure of uncertainty we provide is evaluated and described in terms of the frequency of hypothetical replicates of our data (hence the term frequentist). If we were to go out and re-sample turkey locations, what values of <span class="math inline">\(\theta\)</span> would result in producing the same or similar data. It is important to note here, we are still considering a fixed value, we are just falls within a given range.</p>
+<p>Estimating the value for <span class="math inline">\(\theta\)</span> that maximizes the likelihood is only half of what we need to answer our research question. The other half is defining our uncertainty in that estimate, which can be described using <strong>confidence intervals</strong>. A confidence interval is just the range of values defining <span class="math inline">\(\theta\)</span> that fall within some arbitrary level of certainty we wish to apply to the model. Again, the exact methods for determining confidence intervals are not relevant. What is important to understand is that any measure of uncertainty we provide is evaluated and described in terms of the frequency of hypothetical replicates of our data (hence the term frequentist). If we were to go out and re-sample turkey locations, what values of <span class="math inline">\(\theta\)</span> would result in producing the same or similar data. It is important to note here, we are still considering <span class="math inline">\(\theta\)</span> a fixed value, we are just hedging our bets as to what that value actually is.</p>
 </div>
 <div id="a-bayesian-approach" class="section level3">
 <h3>A Bayesian Approach</h3>
-<p>A Bayesian on th other hand treats and y in the reverse, <span class="math inline">\(Pr(\theta|y)\)</span>.</p>
+<p>A Bayesian approach is going to start in a very similar place as a frequentist one. We have known data (y), a parameter we wish to describe (<span class="math inline">\(\theta\)</span>), and a model defining our hypothesized relationship between the two (<span class="math inline">\(P(\theta|y)\)</span>). A major difference between Bayesian and Frequentist is that, where a frequentist treats</p>
 <div id="bayes-theorem" class="section level4">
 <h4>Bayes Theorem:</h4>
-<p>[Why is it called bayesian statistics?]</p>
 <p><span class="math display">\[ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}\]</span> [What are theta and y in this scenario] [Theta = unobserved] [y = observed]</p>
 </div>
 </div>
@@ -416,9 +415,9 @@ This module is intended as a starting point for learning about Bayesian statisti
 <h3>An Example:</h3>
 <p>To provide a more tangible example, lets apply Bayes theorem to a simple example. Assume…</p>
 </div>
-<div id="bayesian-vs-frequentist-vs-maximum-likelihood" class="section level3">
-<h3>Bayesian vs Frequentist vs Maximum Likelihood</h3>
-<p>So now that you have at least a broad understanding of the differences between the two approaches, how do you choose which to use?</p>
+<div id="bayesian-vs-frequentist" class="section level3">
+<h3>Bayesian vs Frequentist</h3>
+<p>So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets identify the aspects of each that are similar and different from one another.</p>
 <p>[Kery and Schaub - Bayesian pop analysis ch 2.4]</p>
 <p>[Held and Bove - Likelihood and Bayesian Inference ch 3]</p>
 <p>[Hobbs and Hooten - 4.2 Likelihood profiles]</p>

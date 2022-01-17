@@ -2,7 +2,9 @@
 title: "A Broad Introduction to Bayesian Statistics"
 author: "Matthew Gonnerman"
 date: "1/16/2022"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -43,15 +45,14 @@ Estimating the value for $\theta$ that maximizes the likelihood is only half of 
 
 ### A Bayesian Approach
 
-So now that we have a broad understanding of how a frequentist 
-
-
-
-#### Bayes Theorem:
-[Why is it called bayesian statistics?]
+A Bayesian approach is going to start in a very similar place as a frequentist one. We have known data (y), a parameter we wish to describe ($\theta$), and a model defining our hypothesized relationship between the two. Where bayesian deviates from frequentist is in how we treat $\theta$. Instead of seeking to define a fixed value around which there is some uncertainty (i.e. Frequentist), we instead are looking to define some probability distribution that describes [A key distinction here is that we are not seeking some fixed value of ] We can approach this problem by considering the probability of our data and $\theta$ occuring together or $P(y, \theta)$.  
 
 $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
-[What are theta and y in this scenario] [Theta = unobserved] [y = observed]
+
+#### Bayes Theorem:
+
+$$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
+
 
 
 ### In plain english...
@@ -78,9 +79,9 @@ Bayes theorem centers around the probability of theta and y both occuring at the
 To provide a more tangible example, lets apply Bayes theorem to a simple example. Assume...
 
 
-### Bayesian vs Frequentist vs Maximum Likelihood
+### Bayesian vs Frequentist
 
-So now that you have at least a broad understanding of the differences between the two approaches, how do you choose which to use?
+So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets identify the aspects of each that are similar and different from one another. 
 
 [Kery and Schaub - Bayesian pop analysis ch 2.4]
 

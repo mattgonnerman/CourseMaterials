@@ -1,0 +1,284 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={A Broad Introduction to Bayesian Statistics},
+  pdfauthor={Matthew Gonnerman},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx,grffile}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+
+\title{A Broad Introduction to Bayesian Statistics}
+\author{Matthew Gonnerman}
+\date{1/16/2022}
+
+\begin{document}
+\maketitle
+
+\emph{A Note to Readers: This module is a work in progress}
+
+\hypertarget{outline}{%
+\subsubsection{Outline:}\label{outline}}
+
+\protect\hyperlink{objectives}{Objectives}\\
+\protect\hyperlink{known-and-unknown-information}{Known and Unknown
+Information}\\
+\protect\hyperlink{a-frequentist-approach}{A Frequentist Approach}\\
+\protect\hyperlink{a-bayesian-approach}{A Bayesian Approach}
+
+\hypertarget{objectives}{%
+\subsubsection{Objectives}\label{objectives}}
+
+This module is intended as a starting point for learning about Bayesian
+statistics, specifically aimed at graduate students studying ecology who
+are unfamiliar or uncomfortable with statistics in general. It should
+not be considered a comprehensive description but rather as a means of
+entry that hopefully will give you confidence to further explore these
+concepts. I have stripped away much of the details about methods and
+derivation of equations to make this more of a summary of how different
+statistical philosophies approach a problem. To that end, I wrote this
+module with the following objectives in mind\ldots{}\\
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi})}
+\tightlist
+\item
+  To provide a broad, introductory description of Bayesian philosophy.\\
+\item
+  To breakdown the mechanisms by which Bayesian statistics functions as
+  well as provide a brief summary of one of its most commonly used
+  tools, Markov chain Monte Carlo simulations.\\
+\item
+  To differentiate a Bayesian approach from the more commonly taught
+  Frequentist approach.\\
+\item
+  \emph{To force myself to better understand these concepts and to learn
+  RMarkdown in the process (This one is just for me, but at least now
+  you know why someone would do this in the first place).}
+\end{enumerate}
+
+\hypertarget{known-and-unknown-information}{%
+\subsubsection{Known and Unknown
+Information}\label{known-and-unknown-information}}
+
+If you are reading this module, I assume you are either being forced to
+or you are a graduate student with a need or desire to better understand
+your options when conducting analyses. While we all are working with
+different study systems and animals, we have some things in common.
+First, we had to write a research proposal describing a statistical
+approach that we did not yet understand because our adviser suggested it
+to us. Second, we have a series of questions we hope to answer to aid in
+the management of our systems. And third, we possess (or will collect)
+data sets from our systems which we will use to answer our research
+questions. For example, I studied population and movement ecology of
+game birds and focused on questions relating to the composition and
+distribution of wild turkey populations, such as how they use different
+land cover types throughout the year. To that end, I collected data on
+turkey locations using GPS and VHF radio-telemetry which, in combination
+with remotely sensed data products such as the National Land Cover
+Database, represented the data I had available to describe my system.
+
+Regardless of the system we wish to study, information can be broken
+down into two categories: what is known and what is unknown. In the case
+of our turkey example, the knowns are turkey locations, individual
+turkey characteristics, and associated land cover at each location. The
+unknowns are the underlying relationships that define how these two data
+sets relate to one another. Do turkeys select for a given land cover
+type consistently more than others? Is there some effect of weather on
+selection? Maybe a turkey's sex or age affects their decision-making
+process? What about time of day? While in practice these decisions can
+be described using increasingly complex modeling techniques, we can
+simplify a decision to a weighted coin flip describing whether a turkey
+would select one option over another. For the sake of being on the same
+page, lets use this system and data as an example throughout the module
+to describe these coin flips. Specifically, we wish to know how much the
+presence of snow impacts a turkey's use of forested over other land
+cover options.
+
+So now we have our data and the research question we wish to answer, but
+we still need to determine how we will approach our analysis (ideally
+this is done in the planning stage of your research). Within the field
+of ecology, we tend to choose an approaches that fall within one of two
+paradigms, bayesian or frequentist statistics. While there are many
+similarities and distinctions between the two (which we will summarize
+at the end of this module), let's take a 10,000 ft view of how each
+approaches known and unknown information.
+
+\hypertarget{a-frequentist-approach}{%
+\subsubsection{A Frequentist Approach}\label{a-frequentist-approach}}
+
+A frequentist would look at our turkey resource selection question and
+say that there is some fixed parameter, \(\theta\), that describes the
+effect size of snow depth on selection for forests. By fixed, we mean
+that there is some true value for \(\theta\) that applies to our study
+system. We do not know it, but it exists (even if it is 0). We then
+treat our collected data, y, as random variables which are drawn from
+some larger pool of possible data. The data is random because if we were
+to go back out and collect new data, we would almost certainly get a
+different data set due to any number of factors such as measurement
+error, predator presence, or individual behavioral differences. We can
+describe the relationship between our known and unknown information
+using a probability statement, \(Pr(y|\theta)\), which reads ``the
+probability of collecting our observed data assuming some unknwon value
+for \(\theta\).''
+
+This probability statement alone doesn't do much for us because we don't
+know what \(\theta\) is. However, it can be rewritten as a
+\textbf{likelihood function}, \(L(\theta|y)\), which now makes our
+parameter dependent on the data we collected. This reads as ``the
+likelihood of a parameter value given the data'' and is equivalent to
+our probability statement, \(L(\theta|y) = Pr(y|\theta)\). By re-framing
+our known and unknown information in this way, we can ask what value of
+\(\theta\) is the most likely to be true given the data we collected. By
+reversing the dependencies, we can use our model to ask how likely our
+data set is for a given value of of \(\theta\). In terms of our research
+question, what relationship between turkey habitat selection and snow
+best describes the location information that we collected. We can
+compare likelihoods across different values for \(\theta\) to find which
+value maximizes the likelihood. The exact steps to this process are more
+involved and involve some math that I will not cover here, but for more
+information search for \textbf{Maximum Likelihood Estimators (MLE)}.
+
+Estimating the value for \(\theta\) that maximizes the likelihood is
+only half of what we need to answer our research question. The other
+half is defining our uncertainty in that estimate, which can be
+described using \textbf{confidence intervals}. A confidence interval is
+just the range of values defining \(\theta\) that fall within some
+arbitrary level of certainty we wish to apply to the model. Again, the
+exact methods for determining confidence intervals are not relevant.
+What is important to understand is that any measure of uncertainty we
+provide is evaluated and described in terms of the frequency of
+hypothetical replicates of our data (hence the term frequentist). If we
+were to go out and re-sample turkey locations, what values of \(\theta\)
+would result in producing the same or similar data. It is important to
+note here, we are still considering \(\theta\) a fixed value, we are
+just hedging our bets as to what that value actually is.
+
+\hypertarget{a-bayesian-approach}{%
+\subsubsection{A Bayesian Approach}\label{a-bayesian-approach}}
+
+A Bayesian approach is going to start in a very similar place as a
+frequentist one. We have known data (y), a parameter we wish to describe
+(\(\theta\)), and a model defining our hypothesized relationship between
+the two (\(P(\theta|y)\)). A major difference between Bayesian and
+Frequentist is that, where a frequentist treats
+
+\hypertarget{bayes-theorem}{%
+\paragraph{Bayes Theorem:}\label{bayes-theorem}}
+
+\[ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}\] {[}What are
+theta and y in this scenario{]} {[}Theta = unobserved{]} {[}y =
+observed{]}
+
+\hypertarget{in-plain-english}{%
+\subsubsection{In plain english\ldots{}}\label{in-plain-english}}
+
+Without focusing on the individual components of the equation, it
+states\ldots{}
+
+\hypertarget{the-components}{%
+\subsubsection{The Components}\label{the-components}}
+
+{[}Statistical Rethinking pf 36?{]}
+
+Now that we understand what the equation says, lets examine the
+individual components and how they help reach that conclusion\ldots{}
+
+\textbf{Prior Distribution} -
+
+\[ \sum_j{Pr(y|\theta_j)} Pr(\theta_j) \]
+
+\hypertarget{why-does-this-work}{%
+\subsubsection{Why does this work?}\label{why-does-this-work}}
+
+Bayes theorem centers around the probability of theta and y both
+occuring at the same time, otherwise written as \(Pr(y,\theta)\).
+{[}Green et al.~has a good walkthrough on pg3{]}
+
+\hypertarget{an-example}{%
+\subsubsection{An Example:}\label{an-example}}
+
+To provide a more tangible example, lets apply Bayes theorem to a simple
+example. Assume\ldots{}
+
+\hypertarget{bayesian-vs-frequentist}{%
+\subsubsection{Bayesian vs Frequentist}\label{bayesian-vs-frequentist}}
+
+So now that you have at least a broad understanding of the differences
+in philosophy between the two approaches, lets identify the aspects of
+each that are similar and different from one another.
+
+{[}Kery and Schaub - Bayesian pop analysis ch 2.4{]}
+
+{[}Held and Bove - Likelihood and Bayesian Inference ch 3{]}
+
+{[}Hobbs and Hooten - 4.2 Likelihood profiles{]}
+
+{[}Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is
+actually random, if we had enough information and a powerful enough
+computer, you could predict almost any natural system in theory{]}
+
+\hypertarget{sources-and-further-reading}{%
+\subsubsection{Sources and Further
+Reading}\label{sources-and-further-reading}}
+
+This module is a synthesis of the sources listed below.\\
+   ???
+
+For a more in depth discussion of the topics covered in this module, I
+have found the below resources very useful in furhtering my
+understanding of statistics.\\
+
+\end{document}
