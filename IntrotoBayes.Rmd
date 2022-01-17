@@ -65,15 +65,18 @@ $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
 
 #### The Components
 
+[reference turkey example]
+
 **Posterior Distribution** - XXX  
 
 **Likelihood** - XXX  
 
 **Prior Distribution** - XXX  
 
+**Marginal Distribution** - XXX  
+
 **Joint Distribution** - XXX  
 
-**Marginal Distribution** - XXX 
 
 ### MCMC: Sampling from the Posterior
 
