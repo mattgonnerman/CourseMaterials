@@ -53,36 +53,48 @@ Estimating the value for $\theta$ that maximizes the likelihood is only half of 
 A Bayesian approach is going to start in a very similar place as a frequentist one. We have known data (y), a parameter we wish to describe ($\theta$), and a model defining our hypothesized relationship between the two. Where we will deviate from frequentist is in how we treat $\theta$. Instead of seeking to define a fixed value around which there is some uncertainty (i.e. Frequentist), we instead are looking to define some probability distribution that describes our parameter. This distinction may not be immediately obvious, but it affects how we describe our results. Whereas frequentists make statements about the probability of observing certain data given values of $\theta$, a bayesian makes statements about the probability that $\theta$ on a specific value.
 
 #### Bayes Theorem:
-Moving on from the philosophical differences in how we describe results, let's discus how a bayesian approach actually differs in practice. To understand this, we will need to to use probability theory. We can approach our question by considering the probability of our data and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rederived and written a number of different ways, shown below...   
+Moving on from the philosophical differences in how we describe results, let's discus how a bayesian approach actually differs in practice. To understand this, we will need to use probability theory. We can approach our question by considering the joint probability of our data and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rederived using basic rules of conditional probability and written a number of different ways, as shown below...   
 
 $$ P(y, \theta) = Pr(\theta|y)Pr(y) = Pr(y|\theta) Pr(\theta)$$  
 
-When we breakdown these probability statements, we find that the probability of both y and $\theta$ occurring together is the same as the probability of y occurring multiplied by the probability of $\theta$ occurring given that y also occurs (or vice versa). Using basic algebra, we can rearrange our equation to create the below statement, also referred to as Bayes Theorem.  
+When we breakdown these probability statements, we find that the probability of both y and $\theta$ occurring together is the same as the probability of y occurring at all multiplied by the probability of $\theta$ occurring given that y also occurs (this can also be written with y and $\theta$ reversed). Using basic algebra, we can rearrange our equation to create the below statement, also referred to as Bayes Theorem.  
 
 
 $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
-
+[Broad description]
 
 #### The Components
-[Statistical Rethinking pf 36?]
 
-Now that we understand what the equation says, lets examine the individual components and how they help reach that conclusion...
+**Posterior Distribution** - XXX  
 
-**Posterior Distribution** - 
+**Likelihood** - XXX  
 
-**Prior Distribution** - 
+**Prior Distribution** - XXX  
 
-$$ \sum_j{Pr(y|\theta_j)} Pr(\theta_j) $$
+**Joint Distribution** - XXX  
 
-### Why does this work?
-Bayes theorem centers around the probability of theta and y both occuring at the same time, otherwise written as $Pr(y,\theta)$. [Green et al. has a good walkthrough on pg3]
+**Marginal Distribution** - XXX 
 
 ### MCMC: Sampling from the Posterior
 
+[Simulated draws from the posterior]
+
+[Sampling Approaches]
 
 ### Bayesian vs Frequentist
 
-So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets get into more detail on the similarities and differences between them.
+So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets get into more detail on the similarities and differences between them. We will start broad and probably reiterate the major points of the above sections and then get into the smaller scale details.  
+
+**Definition of Unknown Parameters** - XXX  
+
+**Randomness vs Uncertainty** - [Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory]  
+
+**Pior information** - XXX  
+
+**Ease of Use** - XXX  
+
+**Computational Limitations** - XXX  
+
 
 [Kery and Schaub - Bayesian pop analysis ch 2.4]
 
@@ -90,7 +102,7 @@ So now that you have at least a broad understanding of the differences in philos
 
 [Hobbs and Hooten - 4.2 Likelihood profiles] 
 
-[Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory] 
+
 
 ### Sources and Other Resources
 

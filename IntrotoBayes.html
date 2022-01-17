@@ -395,34 +395,36 @@ pre code {
 <p>A Bayesian approach is going to start in a very similar place as a frequentist one. We have known data (y), a parameter we wish to describe (<span class="math inline">\(\theta\)</span>), and a model defining our hypothesized relationship between the two. Where we will deviate from frequentist is in how we treat <span class="math inline">\(\theta\)</span>. Instead of seeking to define a fixed value around which there is some uncertainty (i.e. Frequentist), we instead are looking to define some probability distribution that describes our parameter. This distinction may not be immediately obvious, but it affects how we describe our results. Whereas frequentists make statements about the probability of observing certain data given values of <span class="math inline">\(\theta\)</span>, a bayesian makes statements about the probability that <span class="math inline">\(\theta\)</span> on a specific value.</p>
 <div id="bayes-theorem" class="section level4">
 <h4>Bayes Theorem:</h4>
-<p>Moving on from the philosophical differences in how we describe results, let’s discus how a bayesian approach actually differs in practice. To understand this, we will need to to use probability theory. We can approach our question by considering the probability of our data and <span class="math inline">\(\theta\)</span> occurring together, otherwise written as <span class="math inline">\(P(y, \theta)\)</span>. This probability can be rederived and written a number of different ways, shown below…</p>
+<p>Moving on from the philosophical differences in how we describe results, let’s discus how a bayesian approach actually differs in practice. To understand this, we will need to use probability theory. We can approach our question by considering the joint probability of our data and <span class="math inline">\(\theta\)</span> occurring together, otherwise written as <span class="math inline">\(P(y, \theta)\)</span>. This probability can be rederived using basic rules of conditional probability and written a number of different ways, as shown below…</p>
 <p><span class="math display">\[ P(y, \theta) = Pr(\theta|y)Pr(y) = Pr(y|\theta) Pr(\theta)\]</span></p>
-<p>When we breakdown these probability statements, we find that the probability of both y and <span class="math inline">\(\theta\)</span> occurring together is the same as the probability of y occurring multiplied by the probability of <span class="math inline">\(\theta\)</span> occurring given that y also occurs (or vice versa). Using basic algebra, we can rearrange our equation to create the below statement, also referred to as Bayes Theorem.</p>
-<p><span class="math display">\[ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}\]</span></p>
+<p>When we breakdown these probability statements, we find that the probability of both y and <span class="math inline">\(\theta\)</span> occurring together is the same as the probability of y occurring at all multiplied by the probability of <span class="math inline">\(\theta\)</span> occurring given that y also occurs (this can also be written with y and <span class="math inline">\(\theta\)</span> reversed). Using basic algebra, we can rearrange our equation to create the below statement, also referred to as Bayes Theorem.</p>
+<p><span class="math display">\[ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}\]</span> [Broad description]</p>
 </div>
 <div id="the-components" class="section level4">
 <h4>The Components</h4>
-<p>[Statistical Rethinking pf 36?]</p>
-<p>Now that we understand what the equation says, lets examine the individual components and how they help reach that conclusion…</p>
-<p><strong>Posterior Distribution</strong> -</p>
-<p><strong>Prior Distribution</strong> -</p>
-<p><span class="math display">\[ \sum_j{Pr(y|\theta_j)} Pr(\theta_j) \]</span></p>
+<p><strong>Posterior Distribution</strong> - XXX</p>
+<p><strong>Likelihood</strong> - XXX</p>
+<p><strong>Prior Distribution</strong> - XXX</p>
+<p><strong>Joint Distribution</strong> - XXX</p>
+<p><strong>Marginal Distribution</strong> - XXX</p>
 </div>
-</div>
-<div id="why-does-this-work" class="section level3">
-<h3>Why does this work?</h3>
-<p>Bayes theorem centers around the probability of theta and y both occuring at the same time, otherwise written as <span class="math inline">\(Pr(y,\theta)\)</span>. [Green et al. has a good walkthrough on pg3]</p>
 </div>
 <div id="mcmc-sampling-from-the-posterior" class="section level3">
 <h3>MCMC: Sampling from the Posterior</h3>
+<p>[Simulated draws from the posterior]</p>
+<p>[Sampling Approaches]</p>
 </div>
 <div id="bayesian-vs-frequentist" class="section level3">
 <h3>Bayesian vs Frequentist</h3>
-<p>So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets get into more detail on the similarities and differences between them.</p>
+<p>So now that you have at least a broad understanding of the differences in philosophy between the two approaches, lets get into more detail on the similarities and differences between them. We will start broad and probably reiterate the major points of the above sections and then get into the smaller scale details.</p>
+<p><strong>Definition of Unknown Parameters</strong> - XXX</p>
+<p><strong>Randomness vs Uncertainty</strong> - [Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory]</p>
+<p><strong>Pior information</strong> - XXX</p>
+<p><strong>Ease of Use</strong> - XXX</p>
+<p><strong>Computational Limitations</strong> - XXX</p>
 <p>[Kery and Schaub - Bayesian pop analysis ch 2.4]</p>
 <p>[Held and Bove - Likelihood and Bayesian Inference ch 3]</p>
 <p>[Hobbs and Hooten - 4.2 Likelihood profiles]</p>
-<p>[Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory]</p>
 </div>
 <div id="sources-and-other-resources" class="section level3">
 <h3>Sources and Other Resources</h3>
