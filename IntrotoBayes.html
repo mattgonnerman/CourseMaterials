@@ -356,34 +356,46 @@ pre code {
 <div id="outline" class="section level3">
 <h3>Outline:</h3>
 <p><a href="#objectives">Objectives</a><br />
-[Sources]</p>
+<a href="#known-and-unknown-information">Known and Unknown Information</a><br />
+<a href="#a-frequentist-approach">A Frequentist Approach</a><br />
+<a href="#a-bayesian-approach">A Bayesian Approach</a></p>
 </div>
 <div id="objectives" class="section level3">
 <h3>Objectives</h3>
-<p>This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive summary but rather as a means of entry that hopefully will give you confidence to further explore these concepts further. To that end, I wrote this module with the following objectives in mind…<br />
-   1) To provide a broad, introductory description of Bayesian philosophy.<br />
-   2) To breakdown the mechanisms by which Bayesian statistics functions as well as provide a brief summary of one of its most commonly used tools, Markov chain Monte Carlo simulations.<br />
-   3) To differentiate a Bayesian approach from the more commonly taught Frequentist approach.<br />
-   <em>4) To force myself to learn RMarkdown (This one is just for me)</em></p>
+This module is intended as a starting point for learning about Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive summary but rather as a means of entry that hopefully will give you confidence to further explore these concepts further. I have stripped away much of the detail to provide you with what I believe is the core information is most helpful for understanding these concepts. To that end, I wrote this module with the following objectives in mind…<br />
+
+<div style="margin-left: 1em;">
+<ol style="list-style-type: decimal">
+<li>To provide a broad, introductory description of Bayesian philosophy.<br />
+</li>
+<li>To breakdown the mechanisms by which Bayesian statistics functions as well as provide a brief summary of one of its most commonly used tools, Markov chain Monte Carlo simulations.<br />
+</li>
+<li>To differentiate a Bayesian approach from the more commonly taught Frequentist approach.<br />
+</li>
+<li><em>To force myself to better understand these concepts and to learn RMarkdown in the process (This one is just for me, but at least now you know why someone would do this in the first place).</em>
+</div></li>
+</ol>
 </div>
-<div id="common-nomenclature-and-symbols" class="section level3">
-<h3>Common Nomenclature and Symbols</h3>
-<p>Before we jump head first into statistical philosophy, let’s first take a moment to make sure we all have a baseline understanding on how to read probabilities andgo over basic nomenclature and symbols you will encounter within this module. For those familiar with probabilities and statistics, this will be a review for you.</p>
-<p>[COME BACK TO THIS AFTER EVERYTHING IS WRITTEN AND BREAKDOWN]</p>
+<div id="known-and-unknown-information" class="section level3">
+<h3>Known and Unknown Information</h3>
+<p>If you are reading this module, I assume you are either being forced to or you are a graduate student with a need or desire to better understand your options when conducting analyses. While we all are working with different study systems and animals, we have some things in common. First, we had to write a research proposal describing a statistical approach that we did not yet understand because our adviser suggested it to us. Second, we have a series of questions we hope to answer to aid in the management of our systems. And third, we possess (or will collect) data sets from our systems which we will use to answer our research questions. For example, I studied population and movement ecology of game birds and focused on questions relating to the composition and distribution of wild turkey populations, such as how they use different land cover types throughout the year. To that end, I collected data on turkey locations using GPS and VHF radio-telemetry which, in combination with remotely sensed data products such as the National Land Cover Database, represented the data I had available to describe my system.</p>
+<p>Regardless of the system we wish to study, information can be broken down into two categories: what is known and what is unknown. In the case of our turkey example, the knowns are turkey locations, individual turkey characteristics, and associated land cover at each location. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe a turkey’s sex or age affects their decision-making process? What about time of day? While in practice these decisions can be described using increasingly complex modeling techniques, we can simplify a decision to a weighted coin flip describing whether a turkey would select one option over another. For the sake of being on the same page, lets use this system and data as an example throughout the module to describe these coin flips. Specifically, we wish to know how much the presence of snow impacts a turkey’s use of forested over other land cover options.</p>
+<p>So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. While there are many similarities and distinctions between the two (which we will summarize at the end of this module), let’s take a 10,000 ft view of how each approaches known and unknown information.</p>
 </div>
-<div id="lets-get-started" class="section level3">
-<h3>Let’s get started:</h3>
-<p>If you have made it this far, I assume you are either being forced to at gunpoint or you are a graduate student with a need or desire to better understand your options when conducting analysis for your research. While we may all have very different study systems and animals, we likely all have some things in common. First, we had to write a research proposal describing a statistical approach that we did not yet understand because our adviser suggested it to us. Second, we have a series of questions we hope to answer to aid in the management of our systems. And third, we possess (or will collect) a data set representing known information about our systems which will allow us to answer our research questions.</p>
-<p>For example, I studied population and movement ecology of game birds during graduate school. My research questions focused on the composition and distribution of wild turkey populations, such as how they use different land cover types during various seasons. To that end, I collected data on turkey locations using GPS and VHF radio-telemetry which, in combination with remotely sensed data products such as the National Land Cover Database, represented the data I had available to answer my research questions.</p>
-<p>[Need some segue here]. For any system that we wish to study, information can be broken down into two categories: what is known and what is unknown. In the case of our turkey example, the knowns are the individual turkey location data and the associated land cover information. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe turkey sex or age affects their decision-making process? What about time of day? For the sake of all of us being on the same page, lets use this system and data as an example throughout this module. Specifically, you wish to know the magnitude of the effect of snow depth on turkey use of forested land cover.</p>
-<p>So now we have our data and the research questions we wish to answer, but we still need to determine how we will approach our analysis. Within the field of ecology, we tend to choose an approach that can fall within one of two paradigms, Bayesian or Frequentist statistics. While there are many similarities and distinctions between the two (which we will summarize at the end of this module), one fundamental difference focuses on how we treat the relationship between our known and unknown information.</p>
-<p>A Frequentist would look at our turkey resource selection question and say that there is some fixed parameter, <span class="math inline">\(\theta\)</span>, that describes the effect size of snow depth on turkey selection for forests. By fixed, we mean that there is some true value for <span class="math inline">\(\theta\)</span> that applies to our study system. We may not know it, but it exists. We then treat our collected data, y, as random variables which are drawn from some larger pool of possible values. The data is random because if we were to go back out and collect new data, we would almost certainly get a different data set due to any number of factors such as measurement error, predator presence, or individual behavioral differences. Probabilisticly, we can write this as <span class="math inline">\(Pr(y|\theta)\)</span>, which says “the probability of collecting data y given some known value for <span class="math inline">\(\theta\)</span>.” This is also known as the <em>likelihood</em> and can be estimated using various methods (which is a topic for a different module).</p>
+<div id="a-frequentist-approach" class="section level3">
+<h3>A Frequentist Approach</h3>
+<p>A frequentist would look at our turkey resource selection question and say that there is some fixed parameter, <span class="math inline">\(\theta\)</span>, that describes the effect size of snow depth on selection for forests. By fixed, we mean that there is some true value for <span class="math inline">\(\theta\)</span> that applies to our study system. We do not know it, but it exists (even if it is 0). We then treat our collected data, y, as random variables which are drawn from some larger pool of possible data. The data is random because if we were to go back out and collect new data, we would almost certainly get a different data set due to any number of factors such as measurement error, predator presence, or individual behavioral differences. We can describe the relationship between our known and unknown information using a probability statement, <span class="math inline">\(Pr(y|\theta)\)</span>, which reads “the probability of collecting our observed data assuming some unknwon value for <span class="math inline">\(\theta\)</span>.”</p>
+<p>This probability statement alone doesn’t do much for us because we don’t know what <span class="math inline">\(\theta\)</span> is. However, it can be rewritten as a <strong>likelihood function</strong>, <span class="math inline">\(L(\theta|y)\)</span>, which now makes our parameter dependent on the data we collected. This reads as “the likelihood of a parameter value given the data” and is equivalent to our probability statement, <span class="math inline">\(L(\theta|y) = Pr(y|\theta)\)</span>. By re-framing our known and unknown information in this way, we can ask what value of <span class="math inline">\(\theta\)</span> is the most likely to be true given the data we collected. By reversing the dependencies, we can use our model to ask how likely our data set is for a given value of of <span class="math inline">\(\theta\)</span>. In terms of our research question, what relationship between turkey habitat selection and snow best describes the location information that we collected. We can compare likelihoods across different values for <span class="math inline">\(\theta\)</span> to find which value maximizes the likelihood. The exact steps to this process are more involved and involve some math that I will not cover here, but for more information search for <strong>Maximum Likelihood Estimators (MLE)</strong>.</p>
+<p>Estimating the value for <span class="math inline">\(\theta\)</span> that maximizes the likelihood is only half of what we need to answer our research question. The other half is describing our uncertainty in that estimate. Again, the exact methods used within MLE to determine uncertainty are not relevant. What is important to understand is that any measure of uncertainty we provide is evaluated and described in terms of the frequency of hypothetical replicates of our data (hence the term frequentist). If we were to go out and re-sample turkey locations, what values of <span class="math inline">\(\theta\)</span> would result in producing the same or similar data. It is important to note here, we are still considering a fixed value, we are just falls within a given range.</p>
+</div>
+<div id="a-bayesian-approach" class="section level3">
+<h3>A Bayesian Approach</h3>
 <p>A Bayesian on th other hand treats and y in the reverse, <span class="math inline">\(Pr(\theta|y)\)</span>.</p>
-</div>
-<div id="bayes-theorem" class="section level3">
-<h3>Bayes Theorem:</h3>
+<div id="bayes-theorem" class="section level4">
+<h4>Bayes Theorem:</h4>
 <p>[Why is it called bayesian statistics?]</p>
 <p><span class="math display">\[ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}\]</span> [What are theta and y in this scenario] [Theta = unobserved] [y = observed]</p>
+</div>
 </div>
 <div id="in-plain-english" class="section level3">
 <h3>In plain english…</h3>
@@ -399,7 +411,6 @@ pre code {
 <div id="why-does-this-work" class="section level3">
 <h3>Why does this work?</h3>
 <p>Bayes theorem centers around the probability of theta and y both occuring at the same time, otherwise written as <span class="math inline">\(Pr(y,\theta)\)</span>. [Green et al. has a good walkthrough on pg3]</p>
-<p>[Avoid overloading with equations here, try to just talk it out and point to more specific examples]</p>
 </div>
 <div id="an-example" class="section level3">
 <h3>An Example:</h3>
@@ -407,9 +418,11 @@ pre code {
 </div>
 <div id="bayesian-vs-frequentist-vs-maximum-likelihood" class="section level3">
 <h3>Bayesian vs Frequentist vs Maximum Likelihood</h3>
+<p>So now that you have at least a broad understanding of the differences between the two approaches, how do you choose which to use?</p>
 <p>[Kery and Schaub - Bayesian pop analysis ch 2.4]</p>
 <p>[Held and Bove - Likelihood and Bayesian Inference ch 3]</p>
 <p>[Hobbs and Hooten - 4.2 Likelihood profiles]</p>
+<p>[Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory]</p>
 </div>
 <div id="sources-and-further-reading" class="section level3">
 <h3>Sources and Further Reading</h3>
