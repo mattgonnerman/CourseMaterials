@@ -65,20 +65,27 @@ $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
 
 #### The Components
 
+**Likelihood** - XXX [Confusing nomenclature]  
+
+**Prior Distribution** - XXX  [Defining but not exlusive component of bayesian analysis] [Informative priors]. [What can be a prior?] [Real data] [Expectations] [Benefits]  
+
+[Uninformative priors] In the same way that a prior can represent our knowledge of a parameter, it can also be used to represent that we don't have any prior knowledge of a system and adjust our estimates accordingly, [Benefits of this]  
+
+**Marginal Distribution** - XXX  [Probability of the data] [Can be calculated but doesn't have to be] [Explain basics the segue to...]  
+
+**Joint Distribution** - XXX [Product of the likelihood and the prior] [Proportional to the Posterior. Means that where the joint distribution is maximized, so too will the posterior be maximized. Allows us to ignore the marginal distribution]  
+
+**Posterior Distribution** - [This is the most important quantity in Bayesian inference, goal of the analysis.] [Represents information about unknown parameters based on the data and priors provided.] 
+
+[Every posterior distribution used to be a prior]
+
+#### Our Turkey Example
+
 [reference turkey example]
 
-**Posterior Distribution** - XXX  
-
-**Likelihood** - XXX  
-
-**Prior Distribution** - XXX  
-
-**Marginal Distribution** - XXX  
-
-**Joint Distribution** - XXX  
-
-
 ### MCMC: Sampling from the Posterior
+
+[Bayesian Inference is just counting]
 
 [Simulated draws from the posterior]
 
