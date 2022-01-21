@@ -1,0 +1,414 @@
+---
+title: "An Practical Intro to Bayesian Modeling: Wild Turkey Survival in NIMBLE"
+author: "Matthew Gonnerman"
+date: "1/20/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+require("dplyr")
+```
+### Outline:
+[Objectives]  
+[Describing Our Model System]  
+[Simulating our Model System]  
+[Known and Unknown Information]  
+[Sources and Other Resources]
+
+If you are like me, when you started learning how to work within a Bayesian framework, you found it extremely daunting and hard to find an entry point. There are many good books  that discuss the statistics and theory that make these analyses possible, but that doesn't always translate well into code for your analysis. Instead, it can often be helpful to actually rub an analysis first and then learn the concepts second so you have a more concrete understanding of how things are applied. It is with this in mind that I have written this module. We are going to work through an analysis together so that we can learn how to ask questions about animal survival under a Bayesian framework. I will explain concepts as they arise and  point out multiple options for performing the same analysis when available. With all that being said, lets outline exactly what we want to accomplish in this lesson.  
+
+### Objectives
+
+This module is intended as a starting point for learning about the application of Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive description but rather as a means of entry that hopefully will give you confidence to further explore these concepts. I have stripped away much of the details to try and distill what is most relevant for ecologists trying to perform an analysis, and not necessarily make you perfect Bayesian statisticians. To that end, I wrote this module with the following objectives in mind...   
+  
+<div style="margin-left: 1em;"> 1) To demonstrate how to run a bayesian survival analysis in R from conception through model diagnostics.   
+2) To outline common decisions that must be made throughout process and provide relevant background to inform that decision making process. 
+3) Compare methods and results from a bayesian and frequentist approach to help show when each framework is most appropriate to use.  
+4) _To force myself to better understand these concepts and to learn RMarkdown in the process (This one is just for me, but at least now you know why someone would do this in the first place)._ </div>
+
+### Describing Our Model System
+Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. For a little background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a lot of interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter months, at their northern range limit, deep snow depths and icy conditions can inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermo-regulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.
+
+<div style="margin-left: 1em;"> 
+1) Decreased survival rates will be associated with increased snow depths.  
+2) Decreased survival rates will be associated with icier conditions.
+3) Decreased survival rates will be associated with decreased temperatures
+4) Decreased survival rates will be associated with increased wind speeds
+</div>
+
+### Simulating our Model System
+So, now we are going to simulate some data that is collected from our simulated population. This may sound a bit silly, but it allows us to [EXPLAIN WHY THIS IS USEFUL] but. So, what kind of data would we collect to monitor survival? We could use radiotelemetry to monitor the live/dead status of a bird. With weekly checks, we could monitor for when a given bird dies, tracking it survival history. 
+
+
+We are going to survival for hypothetical turkeys in Maine. This has the benefit of letting us know we got the answer correct. So we are going to simulate a number of 3 month survival histories for birds. We are interested in January through March, when winter is the most harsh
+
+
+
+First lets define the relationships. Lets assume temperature and wind are driving short term changes in daily survival rate for this hypthetical population.
+
+Define the relevant variables which will determine the dynamics of our system
+
+[z-standardize, aids in interpretation and simplifies process. Encourage standardizing, can link to or show expample how to do.]
+```{r}
+##Simulated turkey survival
+w.days <- 90  #the length of winter
+mean.DSR <- 0.999  #base daily survival rate
+winterSR <- mean.DSR^w.days  #base probability of surviving winter
+winterSR
+
+#EXPLAIN THE LOGIT LINK FUNCTION BRIEFLY
+alpha.s <- gtools::logit(mean.DSR) #Use logit link to create an intercept
+alpha.s
+
+# For every 1 sd increase in snow depth compared to the mean, probability of surviving a given day decreases by ...
+beta.snow <- -.005 
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.snow)
+
+# For every 1 sd increase in ice accumulation compared to the mean, probability of surviving a given day decreases by ...
+beta.ice <- -.001 
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.ice)
+
+# For every 1 sd increase in temperature compared to the mean, probability of surviving a given day increases by ...
+beta.temp <- -.5 
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.temp)
+
+# For every 1 sd increase in average wind speed compared to the mean, probability of surviving a given day decreases by ...
+beta.wind <- -.1 
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.wind)
+```
+
+Simulate turkeys and associated weather experience
+```{r}
+n.turkey <- 200  #number of simulated turkeys
+
+weather.sim <- matrix(NA, nrow = 4, ncol = w.days) #Create an empty matrix to place daily weather information into.
+#For loop to populate the matrix
+for(j in 1:w.days){
+  #Snow Accumulation
+  weather.sim[1,j] <- rlnorm(1, meanlog = log(1), sdlog = log(2)) #continuous lognormal distribution
+  #Ice Accumulation
+  weather.sim[2,j] <- rbeta(1, shape1 = 1, shape2 = 10) #continuous uniform distribution to restrict between 0-3cm
+  #Temperature
+  weather.sim[3,j] <- rnorm(1, mean = 20, sd = 10) #sample discrete unifrom. option to provide a vector of probabilities to weight samples.
+  #Wind Speed
+  weather.sim[4,j] <- rlnorm(1, meanlog = log(7), sdlog = log(1.5)) #
+}
+
+#Since we created the data to match how we would normally measure it, lets next z-standardize the simulated values so they make sense with our beta coefficients.
+for(k in 1:4){
+  weather.sim[k,] <- scale(weather.sim[k,], center = T, scale = T)
+}
+
+#And lets check the values to make sure they make sense. For normally distributed data, we expect values between -2.5 and 2.5. For values with a minimum of 0 we will see some skewing, but as long as we have a mean 0 then we should be alright.
+summary(t(weather.sim)) #this t() function just transposes the matrix to make summarizing easier
+
+
+# Each turkey will also have unique pressures outside of weather which we did not measure but will still cause changes in survival rates, so we need to create a matrix to decide those influences.
+
+random.sim <- matrix(NA, nrow = n.turkey, ncol = w.days)
+for(i in 1:n.turkey){
+  for(j in 1:w.days){
+    random.sim[i,j] <- rnorm(1, mean = 0, sd = 2)
+  }
+}
+random.sim[1:6,1:6]
+
+#We can now simulate each turkeys individual survival outcomes
+#First lets find combine the weather information with the betas we defines to create and unlinked probability
+ind.daily.prob <- matrix(NA, nrow = n.turkey, ncol = w.days)
+for(i in 1:n.turkey){
+  for(j in 1:w.days){
+    ind.daily.prob[i,j] <- alpha.s + beta.snow*weather.sim[1,j] + beta.ice*weather.sim[2,j] + beta.temp*weather.sim[3,j] + beta.wind*weather.sim[4,j] + random.sim[i,j]
+    
+    #We can now use the logit link to tranform into probabilities of surviving a given day
+    ind.daily.prob[i,j] <- gtools::inv.logit(ind.daily.prob[i,j])
+  }
+}
+
+#We can use a bernoulli trial (weighted coin flip) to simulate survival, assuming a bird was alive, need to make sure that they all start alive at capture, all birds assumed caught Dec 31. 
+
+ind.surv.hist <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
+ind.surv.hist[,1] <- 1
+
+#Combine if/else statement with forloop to simulate
+
+for(i in 1:n.turkey){
+  for(j in 2:(w.days+1)){
+    if(ind.surv.hist[i, j-1] == 1){
+      ind.surv.hist[i, j] <- rbinom(1,1, ind.daily.prob[i,(j-1)])
+    }else{
+      break #ends the loop for this bird if it has died
+    }
+  }
+}
+
+#Before we move on, lets change the NAs in the matrix to 0, as once a bird dies it is dead for good.
+ind.surv.hist[is.na(ind.surv.hist)] <- 0
+
+#Encounter history for first bird
+ind.surv.hist[1,]
+
+#Lets see how many survived
+sum(ind.surv.hist[,w.days + 1], na.rm = T)
+ 
+```
+### Known and Unknown Information
+
+The first step in Bayesian model building is going to involve thinking through your system and identifying all of the known and unknown information that will need to be included in the model. This is why first describing your system and stating the research question and hypothesis is so important. It lays all the information out for you.
+
+Known information will often be some version of the data that you collected. If we wished to study wild turkey survival, a frequently used option will be a radio-telemetry study. 
+
+In the case of our turkey example, the knowns are turkey locations, individual turkey characteristics, and associated land cover at each location. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe a turkey's sex or age affects their decision-making process? What about time of day? While in practice these decisions can be described using increasingly complex modeling techniques, we can simplify a decision to a weighted coin flip describing whether a turkey would select one option over another. For the sake of being on the same page, lets use this system and data as an example throughout the module to describe these coin flips. Specifically, we wish to know how much the presence of snow impacts a turkey's use of forested over other land cover options. 
+
+So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. There are many similarities and distinctions  in the methods used between the two (which we will summarize at the end of this module), but the core difference lies in how each approaches known and unknown information. 
+
+Simulate Resulting Survival history
+```{r}
+obs.rate <- .25 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
+
+obs.hist <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
+obs.hist[,1] <- 1 #We know the bird was alive at capture
+#Now we can simulate our technicians going out and doing the work to collect our data.
+for(i in 1:n.turkey){
+  for(j in 2:(w.days+1)){
+    succ.obs <- rbinom(1,1, obs.rate)
+    
+    if(succ.obs == 1){
+      obs.hist[i, j] <- ind.surv.hist[i, j]
+      
+      if(ind.surv.hist[i, j] == 0){ #if the bird is dead we would stop checking on it
+        break #so we exit loop for this bird when we identify a mortality
+      }
+    }
+  }
+}
+
+#Lets compare the known survival to an observation history
+ind.surv.hist[1,]
+obs.hist[1,]
+```
+### From Hypothesis to Model
+So lets check in. We have explicitly stated our research question and hypotheses which we wish to test. We have also collected data in the form of daily survival checks and weather information which constitutes our know information. We have also broadly identified our unknown information which we wish to estimate. So the next step is to create our model, which is where we describe the relationship between our known and unknown data. 
+
+From here we are going to take a slight detour to just provide some context for how exactly we find estimates from this model, If you do not care to read about statistical theory (and who could blame you), you can just skip to where we discuss how to write probability statements describing our model ([Writing Our Model Out]).  
+
+#### Bayes Theorem
+Very briefly, I want to touch on the statistical theory for why this works, which begins with looking at the **joint probability** of two occurrences happening. To understand this, we will need to use probability theory. We can approach our question by considering the joint probability of our data and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rederived using basic rules of conditional probability and written a number of different ways, as shown below...   
+
+$$ P(y, \theta) = Pr(\theta|y)Pr(y) = Pr(y|\theta) Pr(\theta)$$  
+
+When we breakdown these probability statements, we find that the probability of both y and $\theta$ occurring together is the same as the probability of y occurring at all multiplied by the probability of $\theta$ occurring given that y also occurs (this can also be written with y and $\theta$ reversed). Using basic algebra, we can rearrange our equation to create the below statement, also referred to as Bayes Theorem.  
+
+
+$$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
+[Broad description]
+
+#### Linking Theory and Information
+
+**Likelihood** - XXX [Confusing nomenclature]  
+
+**Prior Distribution** - XXX  [Defining but not exlusive component of bayesian analysis] [Informative priors]. [What can be a prior?] [Real data] [Expectations] [Benefits]  
+
+[Uninformative priors] In the same way that a prior can represent our knowledge of a parameter, it can also be used to represent that we don't have any prior knowledge of a system and adjust our estimates accordingly, [Benefits of this]  
+
+**Marginal Distribution** - XXX  [Probability of the data] [Can be calculated but doesn't have to be] [Explain basics the segue to...]  
+
+**Joint Distribution** - XXX [Product of the likelihood and the prior] [Proportional to the Posterior. Means that where the joint distribution is maximized, so too will the posterior be maximized. Allows us to ignore the marginal distribution]  
+
+**Posterior Distribution** - [This is the most important quantity in Bayesian inference, goal of the analysis.] [Represents information about unknown parameters based on the data and priors provided.] 
+
+[Every posterior distribution used to be a prior]
+
+#### Writing Our Model Out
+Walk through the assumptions of the model and show how to code it. 
+
+ADD A NON TIME VARYING COVARIATE TO DEMONSTRATE HOW THEY ARE CODED DIFFERENTLY
+
+we have an issue, survival is varying according to time-varying covariates, so the model need to reflect that. Coded differently than a non-time varying covariate.
+
+DISCUSS SUBSCRIPTS/INDEXING
+
+```{r eval = F}
+### PRIORS ###
+base.S ~ Beta(1,1) # mean survival in restricted to between 0 and 1
+a.S ~ log(base.S/(1-base.S)) #use logit link function to transform base.S into an intercept term for the regression
+b.snow ~ Normal(mean = 0, sd = 1000)#uninformative prior for beta coefficient of effect of snow
+b.ice ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of ice accumulation
+b.temp ~ Normal(mean = -1, sd = 10)#weak informative prior for beta coefficient of effect of temperature
+b.snow ~ Normal(mean = -1, sd = 2)#strong informative prior for beta coefficient of effect of average wind speed
+
+###LIKELIHOOD
+y[i,t] ~ Bernoulli(period.S)
+period.S <- S.t1*S.t2*...*S.t?
+logit(S.t) <- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.wind*x.wind[t] 
+```
+
+### MCMC: Sampling from the Posterior
+[Bayesian Inference is just counting]
+
+[Simulated draws from the posterior]
+
+#### Markvoc Chain Monte Carlo Simulations
+
+[Potential Sampling Approaches]
+
+### Translating Model to Code
+#### MCMC Decisions
+There are quite a few options that need to be made when you run a MCMC. These will largely influence model convergence/run time.  [Broadly describe some decions.] The big issue many people run into when making these decisions which can slow them down is they are trying to find some correct answer, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions.  
+
+**Starting Values** - [Where you tell the MCMC to begin sampling for a given parameter value can affect run time] [For a correctly specified model, this shouldn't affect results]  
+
+[In certain instances, if you let the model choose its own starting values, it can results in impossible relationships, which will cause errors when you try to run the model. For example, if you accidentally supply a negative value to a distribution constrained above 0. By specifying a starting value, you allow the model to start in a realistic location]
+
+[Also important to note, these programs hate NA values. So this may be another place where you need to supply starting information so there are no NA values]
+
+**Burn-in Time** -  
+
+**Sampling Method** -  
+
+**Coding Language** - There are many ways that you can code and run an MCMC. We will focus on two coding frameworks that are currently most widely used among ecologists **JAGS** and **NIMBLE**. [BUGS language]. [Similarities]. [Differences]. [When to choose one of the other].  
+
+[Parallel Processing]
+
+#### A JAGS Example
+Translate our model into JAGS code
+```{r}
+JAGS.turkey.S.model <- function(){
+  ###Priors
+  base.S ~ dbeta(1,1) 
+  logit(a.S) ~ base.S 
+  b.snow ~ dnorm(0, 1/1000)
+  b.ice ~ dnorm(0, 1/1000)
+  b.temp ~ dnorm(-1, 1/10)
+  b.ice ~ dnorm(-1, 1/2) 
+
+
+  ###LIKELIHOOD
+  for(i in 1:n.ind){
+    for(t in 2:n.days){
+      logit(DSR[i,t]) <- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.wind*x.wind[t] 
+    }
+  }
+  
+  for(i in 1:n.ind){
+    for(j in 2:n.obs){
+      obs.S[i,j] ~ dbern(period.S[i,j]) #Probability of survival since previous check
+      period.S[i,j] <- prod(DSR[i, days.since[i,j]]) #Aggregrate survival
+    }
+  }
+}
+```
+[dnorm using precision instead of sd, common so important to note]
+
+[If something is in the equation (= or ~ or <-), then it either needs a prior (b.snow ~ dnorm(0, 1/1000)), be reference to supplied information (obs.S), or be described by estimated or supplied parameters (period.S[i,j] <- prod(DSR[i, missed.days[i,j]])) ]
+
+Reformatting data to get what we want.
+
+```{r}
+#We need information on the time inbetween observations for a given bird. So we are going to create a matrix with that information
+obs.days <- data.frame(which(!is.na(obs.hist), arr.ind = T)) %>%
+  rename(Turkey = row, ObsDay = col) %>%
+  arrange(Turkey, ObsDay) %>%
+  mutate(DaysSince = ifelse(ObsDay == 1, NA, ObsDay - lag(ObsDay)))
+days.since <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
+for(i in 1:nrow(obs.days)){
+  days.since[obs.days$Turkey[i],obs.days$ObsDay[i]] <- obs.days$DaysSince[i]
+}
+obs.hist[1:6, 1:10]
+days.since[1:6, 1:10]
+
+
+```
+
+
+
+Packaging everything up. As you can see in our model, we are going to need to reformatting of our data to get it into format our model can udnerstand and use. For example, I made a huge mistake when I initially thought up this model and thought of a time varying covariate (weather). These are much harder to code compared to characteristics of an individual or system that dont change between observations. This is specifically difficult because 
+```{r}
+#
+
+#Data to supply to the model
+data.list <- list(
+  
+)
+
+#Parameter Monitors
+parameters.null <-c(
+  
+)
+
+#Initial Values
+inits.null <- function(){
+  list(
+    
+  )
+}
+
+#Names of objects for parallel processing
+names.for.parallel <- c(
+  
+)
+```
+
+Run the Model in JAGS
+
+```{r}
+BR_w_SPP_output <- jags.parallel(data = dat,
+                        parameters.to.save = parameters.null,
+                        inits = inits.null,
+                        model.file = br_w_as_model,
+                        n.iter = ni,
+                        n.burnin = nb,
+                        n.thin = nt,
+                        n.chains = nc,
+                        export_obj_names = names_for_parallel) 
+```
+
+### From Daily Survival to Hazard Rate
+There is more than one way to measure surival, so instead running the exact same model, lets measure a hazard rate and see how things change. 
+
+#### A NIMBLE Example
+##
+
+### Model Diagnostics and Reporting Results
+[Trace Plots]
+
+[Posterior Distribution]
+
+
+### Bayesian Versus Frequentist
+[Very quickly show how easily this could be coded using RMark or whatever].  
+  
+So you may be thinking, "if its so easy to do this using a frequentist framework, why in the world did you make me do this long exercise?!."  
+
+#### Direct Comparisons
+**Integrating Models** - XXX  
+
+**Intuitive Description of Uncertainty** - [Hypothetical Replicates vs Probability Statements]  
+
+**Pior information** - XXX  
+
+**Ease of Use** - XXX  
+
+**Computational Limitations** - XXX  
+
+This module is a synthesis of ideas and code found in...  
+<div style="margin-left: 1em;"> 
+  [Dan Gibson's Nest Survival Code](https://dan-gibson.weebly.com/nest-survival-jags.html)  
+  Hobbs and Hooten - Bayesian Models: A Statistical primer for Ecologists  
+  McElreath - Statistical Rethinking: A Bayesian Course with Examples in R and Stan  
+  Kery - Introduction to WinBUGS for Ecologists: A Bayesian approach to regression, ANOVA, mixed models and related analyses  
+  Kery and Schaub - Bayesian Population Analysis using WinBUGS: A Hierarchical Perspective
+</div>
+  
+I have also found the below resources useful in familiarizing myself with and better understanding bayesian concepts and applications.  
+  <div style="margin-left: 1em;">  
+  [Olivier Giminez's Youtube Channel](https://www.youtube.com/c/OlivierGimenez)  
+  [Richard McElreath's Youtube Channel](https://www.youtube.com/channel/UCNJK6_DZvcMqNSzQdEkzvzA/about)  
+  [ritvikmath Youtube Channel](https://www.youtube.com/c/ritvikmath)  
+  [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/frequentist-vs-bayesian-statistics-resources-to-help-you-choose/)  
+  [McGill 2013 - Why saying you are a bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-bayesian-is-a-low-information-statement/)  
+    
+      
+  </div>
