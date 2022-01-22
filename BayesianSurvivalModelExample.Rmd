@@ -29,13 +29,18 @@ This module is intended as a starting point for learning about the application o
 4) _To force myself to better understand these concepts and to learn RMarkdown in the process (This one is just for me, but at least now you know why someone would do this in the first place)._ </div>
 
 ### Describing Our Model System
-Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. For a little background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a lot of interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter months, at their northern range limit, deep snow depths and icy conditions can inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermo-regulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.
+Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. To provide some background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a considerable interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.  
 
 <div style="margin-left: 1em;"> 
-1) Decreased survival rates will be associated with increased snow depths.  
-2) Decreased survival rates will be associated with icier conditions.
-3) Decreased survival rates will be associated with decreased temperatures
-4) Decreased survival rates will be associated with increased wind speeds
+1) Decreased survival rates will be associated with increased snow depths.
+2) Decreased survival rates will be associated with decreased temperatures.
+</div>
+
+But maybe we think there are some other relationships that could be driving winter survival, so we will want to test some other hypotheses related to individual turkey characteristics. For example, maybe we decide to collect weight and size information to measure some metric for body condition at capture. This could give us an overall sense of how "healthy" a turkey is when we capture it. Alternatively, maybe the type of habitat a turkey occupies will influence the availability of natural and anthropogenic food sources. While we could collect very detailed to address such a hypothesis, for the purposes of this lesson we will simplify our hypothesis to describe the dominant land cover type found in an individual turkeys home range. So our two additional hypothesis will look like...
+
+<div style="margin-left: 1em;"> 
+3) Decreased survival rates will be associated with decreased body condition metrics.
+4) Turkeys that primarily occupy forested landscape will experience decreased survival compared to those that occupy agricultural or suburban landscapes.
 </div>
 
 ### Simulating our Model System
@@ -63,67 +68,69 @@ alpha.s <- gtools::logit(mean.DSR) #Use logit link to create an intercept
 alpha.s
 
 # For every 1 sd increase in snow depth compared to the mean, probability of surviving a given day decreases by ...
-beta.snow <- -.005 
+beta.snow <- -.002 
 gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.snow)
 
-# For every 1 sd increase in ice accumulation compared to the mean, probability of surviving a given day decreases by ...
-beta.ice <- -.001 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.ice)
-
 # For every 1 sd increase in temperature compared to the mean, probability of surviving a given day increases by ...
-beta.temp <- -.5 
+beta.temp <- -.25 
 gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.temp)
 
-# For every 1 sd increase in average wind speed compared to the mean, probability of surviving a given day decreases by ...
-beta.wind <- -.1 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.wind)
+# For every 1 sd decrease in body condition compared to the mean, probability of surviving a given day decreases by ...
+beta.body <- -.003 
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.body)
+
+# In comparison to suburban landscapes, the probability of surviving a given day changes by ??? for turkeys in a agricultural/forested landscape...
+beta.ag <- .1
+beta.for <- -.5
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.for)
 ```
 
 Simulate turkeys and associated weather experience
 ```{r}
 n.turkey <- 200  #number of simulated turkeys
 
-weather.sim <- matrix(NA, nrow = 4, ncol = w.days) #Create an empty matrix to place daily weather information into.
+#Simulate individual turkey characteristics
+turkey.sim <- matrix(NA, nrow = n.turkey, ncol = 3)
+for(i in 1:n.turkey){
+  turkey.sim[i,1] <- rnorm(1, mean = 0, sd = 1.5) #Body Condition Metric, referenced to mean body condition (pre-z-standardized)
+  #Categorical covariate for Landscape, need dummy code it
+  h <- sample(1:3, 1) #1 = Suburban, 2 = Agriculture, 3 = Forested
+  turkey.sim[i,2] <-  ifelse(h == 2, 1, 0)
+  turkey.sim[i,3] <-  ifelse(h == 3, 1, 0)
+}
+
+#Simulate daily weather characteristics
+weather.sim <- matrix(NA, nrow = 2, ncol = w.days) #Create an empty matrix to place daily weather information into.
 #For loop to populate the matrix
 for(j in 1:w.days){
   #Snow Accumulation
   weather.sim[1,j] <- rlnorm(1, meanlog = log(1), sdlog = log(2)) #continuous lognormal distribution
-  #Ice Accumulation
-  weather.sim[2,j] <- rbeta(1, shape1 = 1, shape2 = 10) #continuous uniform distribution to restrict between 0-3cm
   #Temperature
-  weather.sim[3,j] <- rnorm(1, mean = 20, sd = 10) #sample discrete unifrom. option to provide a vector of probabilities to weight samples.
-  #Wind Speed
-  weather.sim[4,j] <- rlnorm(1, meanlog = log(7), sdlog = log(1.5)) #
+  weather.sim[2,j] <- rnorm(1, mean = 20, sd = 10) #sample discrete unifrom. option to provide a vector of probabilities to weight samples.
 }
 
-#Since we created the data to match how we would normally measure it, lets next z-standardize the simulated values so they make sense with our beta coefficients.
-for(k in 1:4){
+#Since we created our weather data to match how it is normally measured, lets next z-standardize the simulated values so they make sense with our beta coefficients.
+for(k in 1:2){
   weather.sim[k,] <- scale(weather.sim[k,], center = T, scale = T)
 }
 
-#And lets check the values to make sure they make sense. For normally distributed data, we expect values between -2.5 and 2.5. For values with a minimum of 0 we will see some skewing, but as long as we have a mean 0 then we should be alright.
-summary(t(weather.sim)) #this t() function just transposes the matrix to make summarizing easier
-
-
-# Each turkey will also have unique pressures outside of weather which we did not measure but will still cause changes in survival rates, so we need to create a matrix to decide those influences.
-
+# Each turkey will also have unique pressures and differences in behavior which we did not measure but will still cause changes in survival rates, so we need to simulate these influences for each bird at each time step.
 random.sim <- matrix(NA, nrow = n.turkey, ncol = w.days)
 for(i in 1:n.turkey){
   for(j in 1:w.days){
-    random.sim[i,j] <- rnorm(1, mean = 0, sd = 2)
+    random.sim[i,j] <- rnorm(1, mean = 0, sd = 1)
   }
 }
-random.sim[1:6,1:6]
 
 #We can now simulate each turkeys individual survival outcomes
 #First lets find combine the weather information with the betas we defines to create and unlinked probability
 ind.daily.prob <- matrix(NA, nrow = n.turkey, ncol = w.days)
 for(i in 1:n.turkey){
-  for(j in 1:w.days){
-    ind.daily.prob[i,j] <- alpha.s + beta.snow*weather.sim[1,j] + beta.ice*weather.sim[2,j] + beta.temp*weather.sim[3,j] + beta.wind*weather.sim[4,j] + random.sim[i,j]
+  for(t in 1:w.days){
+    ind.daily.prob[i,t] <- alpha.s + beta.snow*weather.sim[1,t] + beta.temp*weather.sim[2,t] + beta.body*turkey.sim[i,1] + beta.ag*turkey.sim[i,2] + beta.for*turkey.sim[i,3] + random.sim[i,t]
     
     #We can now use the logit link to tranform into probabilities of surviving a given day
-    ind.daily.prob[i,j] <- gtools::inv.logit(ind.daily.prob[i,j])
+    ind.daily.prob[i,t] <- gtools::inv.logit(ind.daily.prob[i,t])
   }
 }
 
@@ -135,9 +142,9 @@ ind.surv.hist[,1] <- 1
 #Combine if/else statement with forloop to simulate
 
 for(i in 1:n.turkey){
-  for(j in 2:(w.days+1)){
-    if(ind.surv.hist[i, j-1] == 1){
-      ind.surv.hist[i, j] <- rbinom(1,1, ind.daily.prob[i,(j-1)])
+  for(t in 2:(w.days+1)){
+    if(ind.surv.hist[i, t-1] == 1){
+      ind.surv.hist[i, t] <- rbinom(1,1, ind.daily.prob[i,(t-1)])
     }else{
       break #ends the loop for this bird if it has died
     }
@@ -166,28 +173,24 @@ So now we have our data and the research question we wish to answer, but we stil
 
 Simulate Resulting Survival history
 ```{r}
-obs.rate <- .25 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
+obs.rate <- .75 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
 
-obs.hist <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
-obs.hist[,1] <- 1 #We know the bird was alive at capture
+obs.hist.mat <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
+obs.hist.mat[,1] <- 1 #We know the bird was alive at capture
 #Now we can simulate our technicians going out and doing the work to collect our data.
 for(i in 1:n.turkey){
-  for(j in 2:(w.days+1)){
+  for(t in 2:(w.days+1)){
     succ.obs <- rbinom(1,1, obs.rate)
     
     if(succ.obs == 1){
-      obs.hist[i, j] <- ind.surv.hist[i, j]
+      obs.hist.mat[i, t] <- ind.surv.hist[i, t]
       
-      if(ind.surv.hist[i, j] == 0){ #if the bird is dead we would stop checking on it
+      if(ind.surv.hist[i, t] == 0){ #if the bird is dead we would stop checking on it
         break #so we exit loop for this bird when we identify a mortality
       }
     }
   }
 }
-
-#Lets compare the known survival to an observation history
-ind.surv.hist[1,]
-obs.hist[1,]
 ```
 ### From Hypothesis to Model
 So lets check in. We have explicitly stated our research question and hypotheses which we wish to test. We have also collected data in the form of daily survival checks and weather information which constitutes our know information. We have also broadly identified our unknown information which we wish to estimate. So the next step is to create our model, which is where we describe the relationship between our known and unknown data. 
@@ -235,10 +238,10 @@ DISCUSS SUBSCRIPTS/INDEXING
 base.S ~ Beta(1,1) # mean survival in restricted to between 0 and 1
 a.S ~ log(base.S/(1-base.S)) #use logit link function to transform base.S into an intercept term for the regression
 b.snow ~ Normal(mean = 0, sd = 1000)#uninformative prior for beta coefficient of effect of snow
-b.ice ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of ice accumulation
 b.temp ~ Normal(mean = -1, sd = 10)#weak informative prior for beta coefficient of effect of temperature
-b.snow ~ Normal(mean = -1, sd = 2)#strong informative prior for beta coefficient of effect of average wind speed
-
+b.bodycondition ~ Normal(mean = -1, sd = 2)#strong but off base informative prior for beta coefficient of effect of average wind speed
+b.ag ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of agricultural landscape
+b.for ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of forested landscape
 ###LIKELIHOOD
 y[i,t] ~ Bernoulli(period.S)
 period.S <- S.t1*S.t2*...*S.t?
@@ -274,51 +277,83 @@ There are quite a few options that need to be made when you run a MCMC. These wi
 
 #### A JAGS Example
 Translate our model into JAGS code
+
+[Write model first, then worry about getting the data formatted correctly - Obviously make sure you aren't writing a model that can't use the data you have]
+
+[Time varying covariate will require some cleverness]
+
 ```{r}
 JAGS.turkey.S.model <- function(){
   ###Priors
   base.S ~ dbeta(1,1) 
   logit(a.S) ~ base.S 
   b.snow ~ dnorm(0, 1/1000)
-  b.ice ~ dnorm(0, 1/1000)
   b.temp ~ dnorm(-1, 1/10)
-  b.ice ~ dnorm(-1, 1/2) 
+  b.bc ~ dnorm(-1, 1/2) 
+  b.ag ~ dnorm(0, 1/1000)
+  b.for ~ dnorm(0, 1/1000)
 
 
   ###LIKELIHOOD
   for(i in 1:n.ind){
-    for(t in 2:n.days){
-      logit(DSR[i,t]) <- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.wind*x.wind[t] 
+    for(t in 1:n.days){
+      logit(DSR[i,t]) <- a.S + b.snow*x.snow[t] + b.temp*x.temp[t] + b.bc*x.bc[i] + b.ag*x.ag[i] + b.for*x.for[i]
     }
   }
-  
-  for(i in 1:n.ind){
-    for(j in 2:n.obs){
-      obs.S[i,j] ~ dbern(period.S[i,j]) #Probability of survival since previous check
-      period.S[i,j] <- prod(DSR[i, days.since[i,j]]) #Aggregrate survival
-    }
+
+  for(j in 1:n.obs){
+    obs.S[j] ~ dbern(period.S[j]) #Probability of survival since previous check
+    period.S[j] <- prod(DSR[turkey.id[j], (day.found[j] - (1:days.since[j]))]) #Aggregrate survival across missed days
   }
 }
 ```
 [dnorm using precision instead of sd, common so important to note]
+
+[Indexing to make these work is one of the more difficult things for me.]
 
 [If something is in the equation (= or ~ or <-), then it either needs a prior (b.snow ~ dnorm(0, 1/1000)), be reference to supplied information (obs.S), or be described by estimated or supplied parameters (period.S[i,j] <- prod(DSR[i, missed.days[i,j]])) ]
 
 Reformatting data to get what we want.
 
 ```{r}
-#We need information on the time inbetween observations for a given bird. So we are going to create a matrix with that information
-obs.days <- data.frame(which(!is.na(obs.hist), arr.ind = T)) %>%
-  rename(Turkey = row, ObsDay = col) %>%
-  arrange(Turkey, ObsDay) %>%
-  mutate(DaysSince = ifelse(ObsDay == 1, NA, ObsDay - lag(ObsDay)))
-days.since <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
-for(i in 1:nrow(obs.days)){
-  days.since[obs.days$Turkey[i],obs.days$ObsDay[i]] <- obs.days$DaysSince[i]
-}
-obs.hist[1:6, 1:10]
-days.since[1:6, 1:10]
+#[Remove first column because don't care about time before]
+obs.hist.mat.noDay1 <- obs.hist.mat[,-1]
 
+#Doesn't like NAs, so we need to remove them from the observation history. An easy way to do this is to convert it to a vector
+obs.hist.vec <- as.vector(t(obs.hist.mat.noDay1))
+obs.hist <- obs.hist.vec[!is.na(obs.hist.vec)]
+
+
+#Because of how we specified DSR within the model, we will need a way to reference between our observation and survival rate. We can create two vectors to reference which bird each observation references and which days to reference for a given time period
+
+#First lets find the number of days between each observation
+obs.days <- data.frame(which(!is.na(obs.hist.mat), arr.ind = T)) %>% #What day did an observation occur for each turkey
+  rename(Turkey = row, ObsDay = col) %>% 
+  arrange(Turkey, ObsDay) %>% #Sort by turkey and day
+  mutate(DaysSince = ifelse(ObsDay == 1, NA, ObsDay - lag(ObsDay))) #Make sure observations on day 1 don't count from previous bird.
+
+turkey.id.mat <- day.found.mat <- days.since.mat <- matrix(NA, nrow = n.turkey, ncol = w.days+1)
+
+for(i in 1:nrow(obs.days)){
+  days.since.mat[obs.days$Turkey[i],obs.days$ObsDay[i]] <- obs.days$DaysSince[i]
+}
+days.since.vec <- as.vector(t(days.since.mat))
+days.since <- days.since.vec[!is.na(days.since.vec)]
+
+#Finally we will need a vector to reference which day a observation occurred on and a separate vector describing which turkey
+for(t in 2:w.days){
+  day.found.mat[, t] <- t
+}
+day.found.mat <- day.found.mat[,-1]
+day.found.vec <- as.vector(t(day.found.mat))
+day.found <- day.found.vec[!is.na(obs.hist.vec)]
+
+for(i in 1:n.turkey){
+  turkey.id.mat[i,] <- i
+}
+turkey.id.mat <- turkey.id.mat[,-1]
+turkey.id.vec <- as.vector(t(turkey.id.mat))
+turkey.id <- turkey.id.vec[!is.na(obs.hist.vec)]
 
 ```
 
@@ -326,43 +361,64 @@ days.since[1:6, 1:10]
 
 Packaging everything up. As you can see in our model, we are going to need to reformatting of our data to get it into format our model can udnerstand and use. For example, I made a huge mistake when I initially thought up this model and thought of a time varying covariate (weather). These are much harder to code compared to characteristics of an individual or system that dont change between observations. This is specifically difficult because 
 ```{r}
-#
-
 #Data to supply to the model
 data.list <- list(
+  #Observation Information
+  obs.S = obs.hist, #Vector containing observed survival history
+  days.since = days.since, #Vector describing number of days since previous observation
+  day.found = day.found, #Vector describing which day an observation occurred
+  turkey.id = turkey.id, #Vector describing which turkey an observation was for
+  n.ind = nrow(turkey.sim), #Number of individual turkeys monitored
+  n.days = ncol(weather.sim), #Number of days in history
+  n.obs = length(obs.hist), #Number of total observations
   
+  #Covariate Information
+  x.snow = weather.sim[1,], #Vector describing snow depth on a given day
+  x.temp = weather.sim[2,], #Vector describing temperature on a given day
+  x.bc = turkey.sim[,1], #Vector describing body condition for a given turkey
+  x.ag = turkey.sim[,2], #Vector describing whether a turkey primarily uses agriculture landscape
+  x.for = turkey.sim[,3] #Vector describing whether a turkey primarily uses forested landscape
 )
 
 #Parameter Monitors
 parameters.null <-c(
-  
+  #Regression Coefficients
+  "a.S",
+  "b.snow",
+  "b.temp",
+  "b.bc",
+  "b.ag",
+  "b.for"
 )
 
 #Initial Values
 inits.null <- function(){
   list(
-    
+    base.S = .998 #Set initial value for base survival rate
   )
 }
-
-#Names of objects for parallel processing
-names.for.parallel <- c(
-  
-)
 ```
 
 Run the Model in JAGS
 
+There will be some decisions you have to make about how many simulations you will run and how many you will keep to make inference from. [Longer simulations = bigger sample size esentially] [Model needs time to find a stable equilibrium] [Burning gives it time to find that equilibrium] [Thinning helps deal with autocorrelation. There are arguments against excessive thinning. Wasting data.] [Nummber of Chains]
 ```{r}
-BR_w_SPP_output <- jags.parallel(data = dat,
+require(R2jags)
+#Make final MCMC related decisions
+ni <- 5000 #Number of simulations to run
+nb <- 1000 #Length of burnin in period
+nt <- 1 #How much thinning should there be
+nc <- 3 #Number of chains to run simultaneously
+
+#Run the model
+BR_w_SPP_output <- jags(data = data.list,
                         parameters.to.save = parameters.null,
                         inits = inits.null,
-                        model.file = br_w_as_model,
+                        model.file = JAGS.turkey.S.model,
                         n.iter = ni,
                         n.burnin = nb,
                         n.thin = nt,
-                        n.chains = nc,
-                        export_obj_names = names_for_parallel) 
+                        n.chains = nc) 
 ```
 
 ### From Daily Survival to Hazard Rate
