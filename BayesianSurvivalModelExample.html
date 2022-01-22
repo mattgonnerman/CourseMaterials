@@ -377,14 +377,18 @@ pre code {
 </div>
 <div id="describing-our-model-system" class="section level3">
 <h3>Describing Our Model System</h3>
-<p>Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let’s use survival rates within turkey populations in New England as our study system. For a little background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a lot of interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter months, at their northern range limit, deep snow depths and icy conditions can inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermo-regulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be “How does winter weather impact the survival of wild turkeys in the northeastern United States.” We will also want to explicitly state our hypothesis which will aid in model construction.</p>
+<p>Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let’s use survival rates within turkey populations in New England as our study system. To provide some background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a considerable interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be “How does winter weather impact the survival of wild turkeys in the northeastern United States.” We will also want to explicitly state our hypothesis which will aid in model construction.</p>
 <div style="margin-left: 1em;">
 <ol style="list-style-type: decimal">
-<li>Decreased survival rates will be associated with increased snow depths.<br />
-</li>
-<li>Decreased survival rates will be associated with icier conditions.</li>
-<li>Decreased survival rates will be associated with decreased temperatures</li>
-<li>Decreased survival rates will be associated with increased wind speeds</li>
+<li>Decreased survival rates will be associated with increased snow depths.</li>
+<li>Decreased survival rates will be associated with decreased temperatures.</li>
+</ol>
+</div>
+<p>But maybe we think there are some other relationships that could be driving winter survival, so we will want to test some other hypotheses related to individual turkey characteristics. For example, maybe we decide to collect weight and size information to measure some metric for body condition at capture. This could give us an overall sense of how “healthy” a turkey is when we capture it. Alternatively, maybe the type of habitat a turkey occupies will influence the availability of natural and anthropogenic food sources. While we could collect very detailed to address such a hypothesis, for the purposes of this lesson we will simplify our hypothesis to describe the dominant land cover type found in an individual turkeys home range. So our two additional hypothesis will look like…</p>
+<div style="margin-left: 1em;">
+<ol start="3" style="list-style-type: decimal">
+<li>Decreased survival rates will be associated with decreased body condition metrics.</li>
+<li>Turkeys that primarily occupy forested landscape will experience decreased survival compared to those that occupy agricultural or suburban landscapes.</li>
 </ol>
 </div>
 </div>
@@ -406,76 +410,67 @@ alpha.s &lt;- gtools::logit(mean.DSR) #Use logit link to create an intercept
 alpha.s</code></pre>
 <pre><code>## [1] 6.906755</code></pre>
 <pre class="r"><code># For every 1 sd increase in snow depth compared to the mean, probability of surviving a given day decreases by ...
-beta.snow &lt;- -.005 
+beta.snow &lt;- -.002 
 gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.snow)</code></pre>
-<pre><code>## [1] 5.007483e-06</code></pre>
-<pre class="r"><code># For every 1 sd increase in ice accumulation compared to the mean, probability of surviving a given day decreases by ...
-beta.ice &lt;- -.001 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.ice)</code></pre>
-<pre><code>## [1] 9.994987e-07</code></pre>
+<pre><code>## [1] 1.999995e-06</code></pre>
 <pre class="r"><code># For every 1 sd increase in temperature compared to the mean, probability of surviving a given day increases by ...
-beta.temp &lt;- -.5 
+beta.temp &lt;- -.25 
 gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.temp)</code></pre>
+<pre><code>## [1] 0.0002836608</code></pre>
+<pre class="r"><code># For every 1 sd decrease in body condition compared to the mean, probability of surviving a given day decreases by ...
+beta.body &lt;- -.003 
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.body)</code></pre>
+<pre><code>## [1] 3.001491e-06</code></pre>
+<pre class="r"><code># In comparison to suburban landscapes, the probability of surviving a given day changes by ??? for turkeys in a agricultural/forested landscape...
+beta.ag &lt;- .1
+beta.for &lt;- -.5
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.for)</code></pre>
 <pre><code>## [1] 0.0006476524</code></pre>
-<pre class="r"><code># For every 1 sd increase in average wind speed compared to the mean, probability of surviving a given day decreases by ...
-beta.wind &lt;- -.1 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.wind)</code></pre>
-<pre><code>## [1] 0.0001050547</code></pre>
 <p>Simulate turkeys and associated weather experience</p>
 <pre class="r"><code>n.turkey &lt;- 200  #number of simulated turkeys
 
-weather.sim &lt;- matrix(NA, nrow = 4, ncol = w.days) #Create an empty matrix to place daily weather information into.
+#Simulate individual turkey characteristics
+turkey.sim &lt;- matrix(NA, nrow = n.turkey, ncol = 3)
+for(i in 1:n.turkey){
+  turkey.sim[i,1] &lt;- rnorm(1, mean = 0, sd = 1.5) #Body Condition Metric, referenced to mean body condition (pre-z-standardized)
+  #Categorical covariate for Landscape, need dummy code it
+  h &lt;- sample(1:3, 1) #1 = Suburban, 2 = Agriculture, 3 = Forested
+  turkey.sim[i,2] &lt;-  ifelse(h == 2, 1, 0)
+  turkey.sim[i,3] &lt;-  ifelse(h == 3, 1, 0)
+}
+
+#Simulate daily weather characteristics
+weather.sim &lt;- matrix(NA, nrow = 2, ncol = w.days) #Create an empty matrix to place daily weather information into.
 #For loop to populate the matrix
 for(j in 1:w.days){
   #Snow Accumulation
   weather.sim[1,j] &lt;- rlnorm(1, meanlog = log(1), sdlog = log(2)) #continuous lognormal distribution
-  #Ice Accumulation
-  weather.sim[2,j] &lt;- rbeta(1, shape1 = 1, shape2 = 10) #continuous uniform distribution to restrict between 0-3cm
   #Temperature
-  weather.sim[3,j] &lt;- rnorm(1, mean = 20, sd = 10) #sample discrete unifrom. option to provide a vector of probabilities to weight samples.
-  #Wind Speed
-  weather.sim[4,j] &lt;- rlnorm(1, meanlog = log(7), sdlog = log(1.5)) #
+  weather.sim[2,j] &lt;- rnorm(1, mean = 20, sd = 10) #sample discrete unifrom. option to provide a vector of probabilities to weight samples.
 }
 
-#Since we created the data to match how we would normally measure it, lets next z-standardize the simulated values so they make sense with our beta coefficients.
-for(k in 1:4){
+#Since we created our weather data to match how it is normally measured, lets next z-standardize the simulated values so they make sense with our beta coefficients.
+for(k in 1:2){
   weather.sim[k,] &lt;- scale(weather.sim[k,], center = T, scale = T)
 }
 
-#And lets check the values to make sure they make sense. For normally distributed data, we expect values between -2.5 and 2.5. For values with a minimum of 0 we will see some skewing, but as long as we have a mean 0 then we should be alright.
-summary(t(weather.sim)) #this t() function just transposes the matrix to make summarizing easier</code></pre>
-<pre><code>##        V1                V2                V3                V4         
-##  Min.   :-1.1095   Min.   :-1.0595   Min.   :-3.0239   Min.   :-1.5833  
-##  1st Qu.:-0.5860   1st Qu.:-0.7922   1st Qu.:-0.7138   1st Qu.:-0.6497  
-##  Median :-0.2918   Median :-0.3291   Median : 0.1185   Median :-0.1292  
-##  Mean   : 0.0000   Mean   : 0.0000   Mean   : 0.0000   Mean   : 0.0000  
-##  3rd Qu.: 0.1805   3rd Qu.: 0.5271   3rd Qu.: 0.7406   3rd Qu.: 0.5305  
-##  Max.   : 5.3003   Max.   : 3.0959   Max.   : 2.0694   Max.   : 3.1080</code></pre>
-<pre class="r"><code># Each turkey will also have unique pressures outside of weather which we did not measure but will still cause changes in survival rates, so we need to create a matrix to decide those influences.
-
+# Each turkey will also have unique pressures and differences in behavior which we did not measure but will still cause changes in survival rates, so we need to simulate these influences for each bird at each time step.
 random.sim &lt;- matrix(NA, nrow = n.turkey, ncol = w.days)
 for(i in 1:n.turkey){
   for(j in 1:w.days){
-    random.sim[i,j] &lt;- rnorm(1, mean = 0, sd = 2)
+    random.sim[i,j] &lt;- rnorm(1, mean = 0, sd = 1)
   }
 }
-random.sim[1:6,1:6]</code></pre>
-<pre><code>##            [,1]       [,2]       [,3]        [,4]         [,5]       [,6]
-## [1,]  0.2656333  1.4214997 -7.2007870  0.54560839 -0.006573285 -2.3388754
-## [2,]  3.6178102 -1.0030127 -0.5381549  1.86290638 -0.946881419  1.9873003
-## [3,] -1.4695402  0.3689376  1.7678730  0.05230372  0.767274756  0.9942881
-## [4,]  0.4621638  1.0448710 -0.3689890 -0.30320435  0.174197476  1.6185435
-## [5,]  2.0106000 -1.9316295 -1.0186037  1.92011563  0.415521726  1.0573764
-## [6,] -3.6458222 -1.8387877  2.9469366 -0.17329094 -0.825027117 -2.4763304</code></pre>
-<pre class="r"><code>#We can now simulate each turkeys individual survival outcomes
+
+#We can now simulate each turkeys individual survival outcomes
 #First lets find combine the weather information with the betas we defines to create and unlinked probability
 ind.daily.prob &lt;- matrix(NA, nrow = n.turkey, ncol = w.days)
 for(i in 1:n.turkey){
-  for(j in 1:w.days){
-    ind.daily.prob[i,j] &lt;- alpha.s + beta.snow*weather.sim[1,j] + beta.ice*weather.sim[2,j] + beta.temp*weather.sim[3,j] + beta.wind*weather.sim[4,j] + random.sim[i,j]
+  for(t in 1:w.days){
+    ind.daily.prob[i,t] &lt;- alpha.s + beta.snow*weather.sim[1,t] + beta.temp*weather.sim[2,t] + beta.body*turkey.sim[i,1] + beta.ag*turkey.sim[i,2] + beta.for*turkey.sim[i,3] + random.sim[i,t]
     
     #We can now use the logit link to tranform into probabilities of surviving a given day
-    ind.daily.prob[i,j] &lt;- gtools::inv.logit(ind.daily.prob[i,j])
+    ind.daily.prob[i,t] &lt;- gtools::inv.logit(ind.daily.prob[i,t])
   }
 }
 
@@ -487,9 +482,9 @@ ind.surv.hist[,1] &lt;- 1
 #Combine if/else statement with forloop to simulate
 
 for(i in 1:n.turkey){
-  for(j in 2:(w.days+1)){
-    if(ind.surv.hist[i, j-1] == 1){
-      ind.surv.hist[i, j] &lt;- rbinom(1,1, ind.daily.prob[i,(j-1)])
+  for(t in 2:(w.days+1)){
+    if(ind.surv.hist[i, t-1] == 1){
+      ind.surv.hist[i, t] &lt;- rbinom(1,1, ind.daily.prob[i,(t-1)])
     }else{
       break #ends the loop for this bird if it has died
     }
@@ -501,12 +496,12 @@ ind.surv.hist[is.na(ind.surv.hist)] &lt;- 0
 
 #Encounter history for first bird
 ind.surv.hist[1,]</code></pre>
-<pre><code>##  [1] 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-## [39] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-## [77] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</code></pre>
+<pre><code>##  [1] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+## [39] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+## [77] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</code></pre>
 <pre class="r"><code>#Lets see how many survived
 sum(ind.surv.hist[,w.days + 1], na.rm = T)</code></pre>
-<pre><code>## [1] 110</code></pre>
+<pre><code>## [1] 173</code></pre>
 </div>
 <div id="known-and-unknown-information" class="section level3">
 <h3>Known and Unknown Information</h3>
@@ -515,35 +510,24 @@ sum(ind.surv.hist[,w.days + 1], na.rm = T)</code></pre>
 <p>In the case of our turkey example, the knowns are turkey locations, individual turkey characteristics, and associated land cover at each location. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe a turkey’s sex or age affects their decision-making process? What about time of day? While in practice these decisions can be described using increasingly complex modeling techniques, we can simplify a decision to a weighted coin flip describing whether a turkey would select one option over another. For the sake of being on the same page, lets use this system and data as an example throughout the module to describe these coin flips. Specifically, we wish to know how much the presence of snow impacts a turkey’s use of forested over other land cover options.</p>
 <p>So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. There are many similarities and distinctions in the methods used between the two (which we will summarize at the end of this module), but the core difference lies in how each approaches known and unknown information.</p>
 <p>Simulate Resulting Survival history</p>
-<pre class="r"><code>obs.rate &lt;- .25 #We can&#39;t expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let&#39;s assume that on average we find a bird every 4 days.
+<pre class="r"><code>obs.rate &lt;- .75 #We can&#39;t expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let&#39;s assume that on average we find a bird every 4 days.
 
-obs.hist &lt;- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
-obs.hist[,1] &lt;- 1 #We know the bird was alive at capture
+obs.hist.mat &lt;- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
+obs.hist.mat[,1] &lt;- 1 #We know the bird was alive at capture
 #Now we can simulate our technicians going out and doing the work to collect our data.
 for(i in 1:n.turkey){
-  for(j in 2:(w.days+1)){
+  for(t in 2:(w.days+1)){
     succ.obs &lt;- rbinom(1,1, obs.rate)
     
     if(succ.obs == 1){
-      obs.hist[i, j] &lt;- ind.surv.hist[i, j]
+      obs.hist.mat[i, t] &lt;- ind.surv.hist[i, t]
       
-      if(ind.surv.hist[i, j] == 0){ #if the bird is dead we would stop checking on it
+      if(ind.surv.hist[i, t] == 0){ #if the bird is dead we would stop checking on it
         break #so we exit loop for this bird when we identify a mortality
       }
     }
   }
-}
-
-#Lets compare the known survival to an observation history
-ind.surv.hist[1,]</code></pre>
-<pre><code>##  [1] 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-## [39] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-## [77] 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0</code></pre>
-<pre class="r"><code>obs.hist[1,]</code></pre>
-<pre><code>##  [1]  1  1  1 NA NA NA NA NA NA NA NA  0 NA NA NA NA NA NA NA NA NA NA NA NA NA
-## [26] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
-## [51] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA
-## [76] NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA NA</code></pre>
+}</code></pre>
 </div>
 <div id="from-hypothesis-to-model" class="section level3">
 <h3>From Hypothesis to Model</h3>
@@ -572,42 +556,186 @@ ind.surv.hist[1,]</code></pre>
 <p>ADD A NON TIME VARYING COVARIATE TO DEMONSTRATE HOW THEY ARE CODED DIFFERENTLY</p>
 <p>we have an issue, survival is varying according to time-varying covariates, so the model need to reflect that. Coded differently than a non-time varying covariate.</p>
 <p>DISCUSS SUBSCRIPTS/INDEXING</p>
-<pre class="r"><code>### PRIORS ###
-base.S ~ dbeta(1,1) # mean survival in restricted to between 0 and 1
-a.S ~ log(base.S/(1-base.S)) #use logit link function to transform base.S into an intercept term for the regression
-b.snow ~ Normal(mean = 0, sd = 1000)#uninformative prior for beta coefficient of effect of snow
-b.ice ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of ice accumulation
-b.temp ~ Normal(mean = -1, sd = 10)#weak informative prior for beta coefficient of effect of temperature
-b.snow ~ Normal(mean = -1, sd = 2)#strong informative prior for beta coefficient of effect of average wind speed
-
-###LIKELIHOOD
-y[i,t] ~ Bernoulli(period.S)
-period.S &lt;- S.t1*S.t2*...*S.t?
-logit(S.t) &lt;- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.wind*x.wind[t] </code></pre>
 </div>
 </div>
-<div id="how-do-we-generate-estimates-from-our-model" class="section level3">
-<h3>How do we generate estimates from our model?</h3>
+<div id="priors" class="section level3">
+<h3>PRIORS</h3>
+<p>base.S ~ Beta(1,1) # mean survival in restricted to between 0 and 1 a.S ~ log(base.S/(1-base.S)) #use logit link function to transform base.S into an intercept term for the regression b.snow ~ Normal(mean = 0, sd = 1000)#uninformative prior for beta coefficient of effect of snow b.temp ~ Normal(mean = -1, sd = 10)#weak informative prior for beta coefficient of effect of temperature b.bodycondition ~ Normal(mean = -1, sd = 2)#strong but off base informative prior for beta coefficient of effect of average wind speed b.ag ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of agricultural landscape b.for ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of forested landscape ###LIKELIHOOD y[i,t] ~ Bernoulli(period.S) period.S &lt;- S.t1<em>S.t2</em>…<em>S.t? logit(S.t) &lt;- a.S + b.snow</em>x.snow[t] + b.ice<em>x.ice[t] + b.temp</em>x.temp[t] + b.wind*x.wind[t]</p>
+</div>
+<div id="mcmc-sampling-from-the-posterior" class="section level3">
+<h3>MCMC: Sampling from the Posterior</h3>
+<p>[Bayesian Inference is just counting]</p>
+<p>[Simulated draws from the posterior]</p>
 <div id="markvoc-chain-monte-carlo-simulations" class="section level4">
 <h4>Markvoc Chain Monte Carlo Simulations</h4>
+<p>[Potential Sampling Approaches]</p>
 </div>
 </div>
 <div id="translating-model-to-code" class="section level3">
 <h3>Translating Model to Code</h3>
 <div id="mcmc-decisions" class="section level4">
 <h4>MCMC Decisions</h4>
-<p>There are quite a few options that need to be made when you run a MCMC. [Broadly describe some decions.] The big issue many people run into when making these decisions which can slow them down is they are trying to find some correct answer, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions.</p>
+<p>There are quite a few options that need to be made when you run a MCMC. These will largely influence model convergence/run time. [Broadly describe some decions.] The big issue many people run into when making these decisions which can slow them down is they are trying to find some correct answer, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions.</p>
 <p><strong>Starting Values</strong> - [Where you tell the MCMC to begin sampling for a given parameter value can affect run time] [For a correctly specified model, this shouldn’t affect results]</p>
+<p>[In certain instances, if you let the model choose its own starting values, it can results in impossible relationships, which will cause errors when you try to run the model. For example, if you accidentally supply a negative value to a distribution constrained above 0. By specifying a starting value, you allow the model to start in a realistic location]</p>
+<p>[Also important to note, these programs hate NA values. So this may be another place where you need to supply starting information so there are no NA values]</p>
 <p><strong>Burn-in Time</strong> -</p>
 <p><strong>Sampling Method</strong> -</p>
 <p><strong>Coding Language</strong> - There are many ways that you can code and run an MCMC. We will focus on two coding frameworks that are currently most widely used among ecologists <strong>JAGS</strong> and <strong>NIMBLE</strong>. [BUGS language]. [Similarities]. [Differences]. [When to choose one of the other].</p>
+<p>[Parallel Processing]</p>
 </div>
 <div id="a-jags-example" class="section level4">
 <h4>A JAGS Example</h4>
+<p>Translate our model into JAGS code</p>
+<p>[Write model first, then worry about getting the data formatted correctly - Obviously make sure you aren’t writing a model that can’t use the data you have]</p>
+<p>[Time varying covariate will require some cleverness]</p>
+<pre class="r"><code>JAGS.turkey.S.model &lt;- function(){
+  ###Priors
+  base.S ~ dbeta(1,1) 
+  a.S &lt;- logit(base.S) 
+  b.snow ~ dnorm(0, 1/1000)
+  b.temp ~ dnorm(-1, 1/10)
+  b.bc ~ dnorm(-1, 1/2) 
+  b.ag ~ dnorm(0, 1/1000)
+  b.for ~ dnorm(0, 1/1000)
+
+
+  ###LIKELIHOOD
+  for(i in 1:n.ind){
+    for(t in 1:n.days){
+      logit(DSR[i,t]) &lt;- a.S + b.snow*x.snow[t] + b.temp*x.temp[t] + b.bc*x.bc[i] + b.ag*x.ag[i] + b.for*x.for[i]
+    }
+  }
+
+  for(j in 1:n.obs){
+    obs.S[j] ~ dbern(period.S[j]) #Probability of survival since previous check
+    period.S[j] &lt;- prod(DSR[turkey.id[j], (day.found[j] - (1:days.since[j]))]) #Aggregrate survival across missed days
+  }
+}</code></pre>
+<p>[dnorm using precision instead of sd, common so important to note]</p>
+<p>[Indexing to make these work is one of the more difficult things for me.]</p>
+<p>[If something is in the equation (= or ~ or &lt;-), then it either needs a prior (b.snow ~ dnorm(0, 1/1000)), be reference to supplied information (obs.S), or be described by estimated or supplied parameters (period.S[i,j] &lt;- prod(DSR[i, missed.days[i,j]])) ]</p>
+<p>Reformatting data to get what we want.</p>
+<pre class="r"><code>#[Remove first column because don&#39;t care about time before]
+obs.hist.mat.noDay1 &lt;- obs.hist.mat[,-1]
+
+#Doesn&#39;t like NAs, so we need to remove them from the observation history. An easy way to do this is to convert it to a vector
+obs.hist.vec &lt;- as.vector(t(obs.hist.mat.noDay1))
+obs.hist &lt;- obs.hist.vec[!is.na(obs.hist.vec)]
+
+
+#Because of how we specified DSR within the model, we will need a way to reference between our observation and survival rate. We can create two vectors to reference which bird each observation references and which days to reference for a given time period
+
+#First lets find the number of days between each observation
+obs.days &lt;- data.frame(which(!is.na(obs.hist.mat), arr.ind = T)) %&gt;% #What day did an observation occur for each turkey
+  rename(Turkey = row, ObsDay = col) %&gt;% 
+  arrange(Turkey, ObsDay) %&gt;% #Sort by turkey and day
+  mutate(DaysSince = ifelse(ObsDay == 1, NA, ObsDay - lag(ObsDay))) #Make sure observations on day 1 don&#39;t count from previous bird.
+
+turkey.id.mat &lt;- day.found.mat &lt;- days.since.mat &lt;- matrix(NA, nrow = n.turkey, ncol = w.days+1)
+
+for(i in 1:nrow(obs.days)){
+  days.since.mat[obs.days$Turkey[i],obs.days$ObsDay[i]] &lt;- obs.days$DaysSince[i]
+}
+days.since.vec &lt;- as.vector(t(days.since.mat))
+days.since &lt;- days.since.vec[!is.na(days.since.vec)]
+
+#Finally we will need a vector to reference which day a observation occurred on and a separate vector describing which turkey
+for(t in 2:(1+w.days)){
+  day.found.mat[, t] &lt;- t
+}
+day.found.mat &lt;- day.found.mat[,-1]
+day.found.vec &lt;- as.vector(t(day.found.mat))
+day.found &lt;- day.found.vec[!is.na(obs.hist.vec)]
+
+for(i in 1:n.turkey){
+  turkey.id.mat[i,] &lt;- i
+}
+turkey.id.mat &lt;- turkey.id.mat[,-1]
+turkey.id.vec &lt;- as.vector(t(turkey.id.mat))
+turkey.id &lt;- turkey.id.vec[!is.na(obs.hist.vec)]</code></pre>
+<p>Packaging everything up. As you can see in our model, we are going to need to reformatting of our data to get it into format our model can udnerstand and use. For example, I made a huge mistake when I initially thought up this model and thought of a time varying covariate (weather). These are much harder to code compared to characteristics of an individual or system that dont change between observations. This is specifically difficult because</p>
+<pre class="r"><code>#Data to supply to the model
+data.list &lt;- list(
+  #Observation Information
+  obs.S = obs.hist, #Vector containing observed survival history
+  days.since = days.since, #Vector describing number of days since previous observation
+  day.found = day.found, #Vector describing which day an observation occurred
+  turkey.id = turkey.id, #Vector describing which turkey an observation was for
+  n.ind = nrow(turkey.sim), #Number of individual turkeys monitored
+  n.days = ncol(weather.sim), #Number of days in history
+  n.obs = length(obs.hist), #Number of total observations
+  
+  #Covariate Information
+  x.snow = weather.sim[1,], #Vector describing snow depth on a given day
+  x.temp = weather.sim[2,], #Vector describing temperature on a given day
+  x.bc = turkey.sim[,1], #Vector describing body condition for a given turkey
+  x.ag = turkey.sim[,2], #Vector describing whether a turkey primarily uses agriculture landscape
+  x.for = turkey.sim[,3] #Vector describing whether a turkey primarily uses forested landscape
+)
+
+#Parameter Monitors
+parameters.null &lt;-c(
+  #Regression Coefficients
+  &quot;a.S&quot;,
+  &quot;b.snow&quot;,
+  &quot;b.temp&quot;,
+  &quot;b.bc&quot;,
+  &quot;b.ag&quot;,
+  &quot;b.for&quot;
+)
+
+#Initial Values
+inits.null &lt;- function(){
+  list(
+    base.S = .998 #Set initial value for base survival rate
+  )
+}</code></pre>
+<p>Run the Model in JAGS</p>
+<p>There will be some decisions you have to make about how many simulations you will run and how many you will keep to make inference from. [Longer simulations = bigger sample size esentially] [Model needs time to find a stable equilibrium] [Burning gives it time to find that equilibrium] [Thinning helps deal with autocorrelation. There are arguments against excessive thinning. Wasting data.] [Nummber of Chains]</p>
+<pre class="r"><code>require(R2jags)</code></pre>
+<pre><code>## Loading required package: R2jags</code></pre>
+<pre><code>## Loading required package: rjags</code></pre>
+<pre><code>## Loading required package: coda</code></pre>
+<pre><code>## Linked to JAGS 4.3.0</code></pre>
+<pre><code>## Loaded modules: basemod,bugs</code></pre>
+<pre><code>## 
+## Attaching package: &#39;R2jags&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:coda&#39;:
+## 
+##     traceplot</code></pre>
+<pre class="r"><code>#Make final MCMC related decisions
+ni &lt;- 5000 #Number of simulations to run
+nb &lt;- 1000 #Length of burnin in period
+nt &lt;- 1 #How much thinning should there be
+nc &lt;- 3 #Number of chains to run simultaneously
+
+#Run the model
+BR_w_SPP_output &lt;- jags(data = data.list,
+                        parameters.to.save = parameters.null,
+                        inits = inits.null,
+                        model.file = JAGS.turkey.S.model,
+                        n.iter = ni,
+                        n.burnin = nb,
+                        n.thin = nt,
+                        n.chains = nc) </code></pre>
+<pre><code>## module glm loaded</code></pre>
+<pre><code>## Compiling model graph
+##    Resolving undeclared variables
+##    Allocating nodes
+## Graph information:
+##    Observed stochastic nodes: 12579
+##    Unobserved stochastic nodes: 6
+##    Total graph size: 103148
+## 
+## Initializing model</code></pre>
 </div>
-<div id="a-nimble-example" class="section level4">
-<h4>A NIMBLE Example</h4>
 </div>
+<div id="model-diagnostics-and-reporting-results-jags" class="section level3">
+<h3>Model Diagnostics and Reporting Results (JAGS)</h3>
+<p>[Different components of the output object]</p>
+<p>[Trace Plots]</p>
+<p>[Posterior Distribution]</p>
 </div>
 <div id="bayesian-versus-frequentist" class="section level3">
 <h3>Bayesian Versus Frequentist</h3>

@@ -8,7 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-require("dplyr")
+require(dplyr)
 ```
 ### Outline:
 [Objectives]  
@@ -58,7 +58,7 @@ Define the relevant variables which will determine the dynamics of our system
 [z-standardize, aids in interpretation and simplifies process. Encourage standardizing, can link to or show expample how to do.]
 ```{r}
 ##Simulated turkey survival
-w.days <- 90  #the length of winter
+w.days <- 60  #the length of winter
 mean.DSR <- 0.999  #base daily survival rate
 winterSR <- mean.DSR^w.days  #base probability of surviving winter
 winterSR
@@ -87,7 +87,7 @@ gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.for)
 
 Simulate turkeys and associated weather experience
 ```{r}
-n.turkey <- 200  #number of simulated turkeys
+n.turkey <- 100  #number of simulated turkeys
 
 #Simulate individual turkey characteristics
 turkey.sim <- matrix(NA, nrow = n.turkey, ncol = 3)
@@ -173,7 +173,7 @@ So now we have our data and the research question we wish to answer, but we stil
 
 Simulate Resulting Survival history
 ```{r}
-obs.rate <- .75 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
+obs.rate <- .90 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
 
 obs.hist.mat <- matrix(NA, nrow = n.turkey, ncol = w.days + 1)
 obs.hist.mat[,1] <- 1 #We know the bird was alive at capture
@@ -233,7 +233,6 @@ we have an issue, survival is varying according to time-varying covariates, so t
 
 DISCUSS SUBSCRIPTS/INDEXING
 
-```{r eval = F}
 ### PRIORS ###
 base.S ~ Beta(1,1) # mean survival in restricted to between 0 and 1
 a.S ~ log(base.S/(1-base.S)) #use logit link function to transform base.S into an intercept term for the regression
@@ -246,7 +245,6 @@ b.for ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of e
 y[i,t] ~ Bernoulli(period.S)
 period.S <- S.t1*S.t2*...*S.t?
 logit(S.t) <- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.wind*x.wind[t] 
-```
 
 ### MCMC: Sampling from the Posterior
 [Bayesian Inference is just counting]
@@ -286,7 +284,7 @@ Translate our model into JAGS code
 JAGS.turkey.S.model <- function(){
   ###Priors
   base.S ~ dbeta(1,1) 
-  logit(a.S) ~ base.S 
+  a.S <- logit(base.S) 
   b.snow ~ dnorm(0, 1/1000)
   b.temp ~ dnorm(-1, 1/10)
   b.bc ~ dnorm(-1, 1/2) 
@@ -341,7 +339,7 @@ days.since.vec <- as.vector(t(days.since.mat))
 days.since <- days.since.vec[!is.na(days.since.vec)]
 
 #Finally we will need a vector to reference which day a observation occurred on and a separate vector describing which turkey
-for(t in 2:w.days){
+for(t in 2:(1+w.days)){
   day.found.mat[, t] <- t
 }
 day.found.mat <- day.found.mat[,-1]
@@ -421,14 +419,14 @@ BR_w_SPP_output <- jags(data = data.list,
                         n.chains = nc) 
 ```
 
-### From Daily Survival to Hazard Rate
-There is more than one way to measure surival, so instead running the exact same model, lets measure a hazard rate and see how things change. 
+### Model Diagnostics and Reporting Results (JAGS)
+[Different components of the output object]
 
-#### A NIMBLE Example
-##
-
-### Model Diagnostics and Reporting Results
 [Trace Plots]
+```{r}
+traceplot(BR_w_SPP_output)
+```
+
 
 [Posterior Distribution]
 
