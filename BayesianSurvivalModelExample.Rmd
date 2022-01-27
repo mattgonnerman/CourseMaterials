@@ -1,21 +1,36 @@
 ---
-title: "An Practical Intro to Bayesian Modeling: Wild Turkey Survival in NIMBLE"
+title: "A Practical Intro to Bayesian Modeling"
+subtitle: "Wild Turkey Survival in JAGS/NIMBLE"
 author: "Matthew Gonnerman"
-date: "1/20/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, setup, include=FALSE}
+lapply(c("dplyr",
+         "ggplot2", 
+         "R2jags",
+         "RMark", 
+         "gtools"),
+       require,
+       character.only = T,
+       quietly = T) #Whether to report successful loading of packages 
 ```
 ### Outline:
 [Objectives]  
+[Setting Up the R Environment]  
 [Describing Our Model System]  
 [Simulating our Model System]  
-[Known and Unknown Information]  
-[Sources and Other Resources]
+[From Hypothesis to Model]  
+[MCMC: Sampling from the Posterior]   
+[Translating Model to Code: An Example in JAGS]  
+[A Bayesian Alternative: NIMBLE]
+[A Frequentist Alternative: RMark]  
+[Comparing Bayesian and Frequentist Approaches]  
+[Sources and Other Resources]  
+  
+In graduate school, I wanted to learn how to code and run analyses within a Bayesian framework. I found the entire introductory process to be extremely daunting, partly because it was difficult to find an entry point. While there are a plethora of helpful books which go into great detail on the theory and application of Bayesian statistics, they often required a level of statistical knowledge that was difficult to obtain by simply reading and following along with the code. Now that I have more experience developing and running these models, I consider myself an ecologist with (to steal a phrase from my PhD advisor) "just enough knowledge to be dangerous" 
 
-When I started learning how to work within a Bayesian framework, I found it extremely daunting and hard to find an entry point. There are many good books that discuss the statistics and theory that make these analyses possible, but that doesn't always translate well into code for your analysis. Instead, it can often be helpful to actually run an analysis first and then learn the concepts second so you have a more concrete understanding of how things are applied. It is with this in mind that I have written this module. We are going to work through an analysis together so that we can learn how to ask questions about animal survival under a Bayesian framework. I will explain concepts as they arise and  point out multiple options for performing the same analysis when available. With all that being said, lets outline exactly what we want to accomplish in this lesson.  
+Instead, it can often be helpful to actually run an analysis first and then learn the concepts second so you have a more practical understanding of how things are applied. It is with this in mind that I have written this module. We are going to work through an survival rate analysis together so that we can learn how to answer research questions under a Bayesian framework. I will expand on relevant Bayesian concepts as they arise, but this should not be considered a comprehensive overview of Bayesian theory and techniques. I will approach our analysis using multiple coding options to provide some idea of the options available to you as you move forward with your work.With all that being said, lets outline exactly what we want to accomplish in this lesson. 
 
 ### Objectives
 
@@ -26,8 +41,34 @@ This module is intended as a starting point for learning about the application o
 3) Compare methods and results from a bayesian and frequentist approach to help show when each framework is most appropriate to use.  
 4) _To force myself to better understand these concepts and to learn RMarkdown in the process (This one is just for me, but at least now you know why someone would do this in the first place)._ </div>
 
+
+### Setting Up the R Environment
+While I assume that you have familiarity in R, there are some relevant points to touch on as we get started coding. For example, an important initial step before any real code is written is to ensure that all necessary packages and programs are loaded onto your system and communicating properly with R. Obviously, these will differ according to your data, research questions, and preferences.  
+  
+Let's start with installing and loading the R packages that we will need. I like to work using the dplyr pipeline so we will use that for data management. I usually assume I will be coding my figures in ggplot2 (because apparently I am both a control-freak and a masochist). We will include the gtools and ??? packages which will provide access to some simple functions that streamline our code without having to write out long equations all the time. We will also load the packages that allow us to actually run our models (R2jags, [NIMBLE], RMark)
+
+```{r, eval = F}
+install.packages()
+lapply(c("dplyr","ggplot2", "gtools", "R2jags", "RMark"),
+       require,
+       character.only = T,
+       quietly = T) #Whether to report successful loading of packages 
+```
+
+In addition to making sure packages are loaded, we will also want to ensure that the programs you are using are installed and correctly communicating with R. [Basic flow] [Common Problems]
+
+[Code organization. Sourcing individual ] A final note on getting started. One piece of advice I wish I had gotten sooner was to think through the workflow and split up the code into sections and 
+```{r eval = F}
+source("1 - DataManagementCode.R")
+source("2 - JAGSModelCode.R")
+source("3 - RunJAGSCode.R")
+source("4 - SummarizeOutput.R")
+source("5 - CreateFigures.R")
+```
+
+
 ### Describing Our Model System
-[Won't focus on decisions specific to the survival analysis and will instead try to highlight decisions and concepts relevant to Bayesian]
+[Won't focus on decisions specific to the survival analysis and will instead try to highlight decisions and concepts relevant to Bayesian] [For further info on survival rate models, http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf]
 
 Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. To provide some background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a considerable interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.  
 
@@ -43,57 +84,58 @@ But maybe we think there are some other relationships that could be driving wint
 4) Turkeys that primarily occupy forested landscape will experience decreased survival compared to those that occupy agricultural or suburban landscapes.
 </div>
 
+[Useful to have all the known parameter values in the same place at the beginning of the code. Makes it easier to change and rerun everything.]
+```{r}
+##Simulated turkey survival
+w.days <- 30  #the length of winter
+mean.DSR <- 0.999  #base daily survival rate
+
+alpha.s <- logit(mean.DSR) #Use logit link to create an intercept
+
+# For every 1 sd increase in snow depth compared to the mean, probability of surviving a given day decreases by ...
+beta.snow <- -.002 
+
+# For every 1 sd increase in temperature compared to the mean, probability of surviving a given day increases by ...
+beta.temp <- -.25 
+
+# For every 1 sd decrease in body condition compared to the mean, probability of surviving a given day decreases by ...
+beta.body <- -.003 
+
+# In comparison to suburban landscapes, the probability of surviving a given day changes by ??? for turkeys in a agricultural/forested landscape...
+beta.ag <- .1
+beta.for <- -.5
+
+```
+
+```{r, echo = F}
+winterSR <- mean.DSR^w.days  #base probability of surviving winter
+print(paste("Mean Cumulative Winter Survival", winterSR, sep = " = "))
+
+print(paste("Logit-Linked Intercept Value", alpha.s, sep = " = "))
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.snow)
+
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.temp)
+
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.body)
+
+gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.for)
+```
+
+
 ### Simulating our Model System
 So, now we are going to simulate some data that is collected from our simulated population. This may sound a bit silly, but it allows us to [EXPLAIN WHY THIS IS USEFUL] but. So, what kind of data would we collect to monitor survival? We could use radiotelemetry to monitor the live/dead status of a bird. With weekly checks, we could monitor for when a given bird dies, tracking it survival history. 
 
 
 We are going to survival for hypothetical turkeys in Maine. This has the benefit of letting us know we got the answer correct. So we are going to simulate a number of 3 month survival histories for birds. We are interested in January through March, when winter is the most harsh
 
-```{r message=F, warning=F, error=F}
-lapply(c("dplyr",
-         "ggplot2", 
-         "R2jags",
-         "RMark"),
-       require,
-       character.only = T)
-```
-
-
 Now that our R environment is ready, lets first lets define the relationships. Lets assume temperature and wind are driving short term changes in daily survival rate for this hypthetical population.
 
 Define the relevant variables which will determine the dynamics of our system
 
 [z-standardize, aids in interpretation and simplifies process. Encourage standardizing, can link to or show expample how to do.]
-```{r}
-##Simulated turkey survival
-w.days <- 30  #the length of winter
-mean.DSR <- 0.999  #base daily survival rate
-winterSR <- mean.DSR^w.days  #base probability of surviving winter
-winterSR
 
-#EXPLAIN THE LOGIT LINK FUNCTION BRIEFLY
-alpha.s <- gtools::logit(mean.DSR) #Use logit link to create an intercept
-alpha.s
 
-# For every 1 sd increase in snow depth compared to the mean, probability of surviving a given day decreases by ...
-beta.snow <- -.002 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.snow)
-
-# For every 1 sd increase in temperature compared to the mean, probability of surviving a given day increases by ...
-beta.temp <- -.25 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.temp)
-
-# For every 1 sd decrease in body condition compared to the mean, probability of surviving a given day decreases by ...
-beta.body <- -.003 
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.body)
-
-# In comparison to suburban landscapes, the probability of surviving a given day changes by ??? for turkeys in a agricultural/forested landscape...
-beta.ag <- .1
-beta.for <- -.5
-gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.for)
-```
-
-Simulate turkeys and associated weather experience
+#### Simulate individual turkey characteristics and associated weather information
 ```{r}
 n.turkey <- 200  #number of simulated turkeys
 
@@ -169,7 +211,7 @@ ind.surv.hist[1,]
 sum(ind.surv.hist[,w.days + 1], na.rm = T)
  
 ```
-### Known and Unknown Information
+#### Known and Unknown Information
 
 The first step in Bayesian model building is going to involve thinking through your system and identifying all of the known and unknown information that will need to be included in the model. This is why first describing your system and stating the research question and hypothesis is so important. It lays all the information out for you.
 
@@ -179,7 +221,7 @@ In the case of our turkey example, the knowns are turkey locations, individual t
 
 So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. There are many similarities and distinctions  in the methods used between the two (which we will summarize at the end of this module), but the core difference lies in how each approaches known and unknown information. 
 
-Simulate Resulting Survival history
+####Simulate Resulting Survival history
 ```{r}
 obs.rate <- .95 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
 
@@ -239,9 +281,9 @@ ADD A NON TIME VARYING COVARIATE TO DEMONSTRATE HOW THEY ARE CODED DIFFERENTLY
 
 we have an issue, survival is varying according to time-varying covariates, so the model need to reflect that. Coded differently than a non-time varying covariate.
 
-DISCUSS SUBSCRIPTS/INDEXING
+[DISCUSS SUBSCRIPTS/INDEXING]
 
-### PRIORS ###
+#### PRIORS
 base.S ~ Beta(1,1) # mean survival in restricted to between 0 and 1
 a.S ~ log(base.S/(1-base.S)) #use logit link function to transform base.S into an intercept term for the regression
 b.snow ~ Normal(mean = 0, sd = 1000)#uninformative prior for beta coefficient of effect of snow
@@ -249,7 +291,7 @@ b.temp ~ Normal(mean = -1, sd = 10)#weak informative prior for beta coefficient 
 b.bodycondition ~ Normal(mean = -1, sd = 2)#strong but off base informative prior for beta coefficient of effect of average wind speed
 b.ag ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of agricultural landscape
 b.for ~ Normal(mean = 0, sd = 1000)#uniformative prior for beta coefficient of effect of forested landscape
-###LIKELIHOOD
+#### LIKELIHOOD
 y[i,t] ~ Bernoulli(period.S)
 period.S <- S.t1*S.t2*...*S.t?
 logit(S.t) <- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.wind*x.wind[t] 
@@ -263,7 +305,7 @@ logit(S.t) <- a.S + b.snow*x.snow[t] + b.ice*x.ice[t] + b.temp*x.temp[t] + b.win
 
 [Potential Sampling Approaches]
 
-### Translating Model to Code
+### Translating Model to Code: An Example in JAGS
 #### MCMC Decisions
 There are quite a few options that need to be made when you run a MCMC. These will largely influence model convergence/run time.  [Broadly describe some decions.] The big issue many people run into when making these decisions which can slow them down is they are trying to find some correct answer, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions.  
 
@@ -287,6 +329,9 @@ Translate our model into JAGS code
 [Write model first, then worry about getting the data formatted correctly - Obviously make sure you aren't writing a model that can't use the data you have]
 
 [Time varying covariate will require some cleverness]
+
+#### Dynamic Indexing
+https://mmeredith.net/blog/2021/JAGS_to_NIMBLE.htm
 
 ```{r}
 JAGS.turkey.S.model <- function(){
@@ -405,10 +450,7 @@ inits.null <- function(){
 }
 ```
 
-
-
-
-###Considerations for Run Time
+#### Considerations for Run Time
 One of the biggest goals of MCMC analysis is to have the model converge as quickly as possible. This helps to save time... There will be many factors affecting run time and many decisions you can make to reduce it. 
 
 **Number of parameters to estimate** - [More nodes means more combinations means more simulations?]  
@@ -430,7 +472,7 @@ One of the biggest goals of MCMC analysis is to have the model converge as quick
 [These decisions will be consistent across coding options, although implimentation may differ.]
 
 
-###Run the Model  
+#### Running the Model  
 ```{r}
 #Make final MCMC related decisions
 ni <- 2000 #Number of simulations to run
@@ -449,7 +491,7 @@ Surv_JAGS_output <- jags(data = data.list,
                         n.chains = nc) 
 ```
 
-### Model Diagnostics and Reporting Results (JAGS)
+#### Model Diagnostics and Reporting Results (JAGS)
 [Different components of the output object]
 
 [Trace Plots]
@@ -464,14 +506,8 @@ traceplot(Surv_JAGS_output, #bugs output object
 #Basic Parameter Estimates
 print(Surv_JAGS_output)
 ```
-#### Continue Simulation if needed
 
-```{r eval = F}
-Surv_JAGS_update <- update(Surv_JAGS_output, n.iter = 1000) #Continues the same simulation, adding iterations 
-Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model until convergence
-```
-
-
+If we want to run a more in-depth diagnostics of our model, it can be useful to extract the actual MCMC chains. This allows for the running of various diagnostic functions.
 ```{r}
 #Convert BUGS output into MCMC for further information and plotting options
 Surv_JAGS_MCMC <- as.mcmc(Surv_JAGS_output)
@@ -486,17 +522,27 @@ gelman.plot(Surv_JAGS_MCMC)
 heidel.diag(Surv_JAGS_MCMC)
 ```
 
+#### Failure to Converge
+[Before rewriting your model, it may be worth first adjusting MCMC options] [Interations/BurnIn time] [Starting Values]
 
+https://cran.r-project.org/web/packages/EcoDiet/vignettes/convergence_problems.html
 
+[Using the original MCMC run to continue simulations with the same model]
+```{r, eval = F}
+Surv_JAGS_update <- update(Surv_JAGS_output, n.iter = 1000) #Continues the same simulation, adding iterations 
+Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model until convergence
+```
+
+#### Evaluating and Presenting Results
 [Posterior Distribution]
 
-### A Quick NIMBLE Example
+### A Bayesian Alternative: NIMBLE
 [Same thing, but in nimble. Will skim over the theoretical and practical implications of our decisions and just show how to code them. ]
 [Why use NIMBLE over JAGS]
 
 
 
-### Bayesian Versus Frequentist
+
 [Very quickly show how easily this could be coded using RMark or whatever].  
   
 So you may be thinking, "if its so easy to do this using a frequentist framework, why in the world did you make me do this long exercise?!."  
@@ -512,28 +558,10 @@ So you may be thinking, "if its so easy to do this using a frequentist framework
 
 **Computational Limitations** - XXX  
 
-This module is a synthesis of ideas and code found in...  
-<div style="margin-left: 1em;"> 
-  [Dan Gibson's Nest Survival Code](https://dan-gibson.weebly.com/nest-survival-jags.html)  
-  Hobbs and Hooten - Bayesian Models: A Statistical primer for Ecologists  
-  McElreath - Statistical Rethinking: A Bayesian Course with Examples in R and Stan  
-  Kery - Introduction to WinBUGS for Ecologists: A Bayesian approach to regression, ANOVA, mixed models and related analyses  
-  Kery and Schaub - Bayesian Population Analysis using WinBUGS: A Hierarchical Perspective
-</div>
-  
-I have also found the below resources useful in familiarizing myself with and better understanding bayesian concepts and applications.  
-  <div style="margin-left: 1em;">  
-  [Olivier Giminez's Youtube Channel](https://www.youtube.com/c/OlivierGimenez)  
-  [Richard McElreath's Youtube Channel](https://www.youtube.com/channel/UCNJK6_DZvcMqNSzQdEkzvzA/about)  
-  [ritvikmath Youtube Channel](https://www.youtube.com/c/ritvikmath)  
-  [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/frequentist-vs-bayesian-statistics-resources-to-help-you-choose/)  
-  [McGill 2013 - Why saying you are a bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-bayesian-is-a-low-information-statement/)  
-    
-      
-  </div>
+
 [So now that you know how to do this under a bayesian framework, and you've seen how complicated it is, how would we run the same analysis as a frequentist?]
 
-#### A Quick RMark Example
+### A Frequentist Alternative: RMark 
 [Phidot link](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf)
 
 #### Format the Data
@@ -581,20 +609,19 @@ WintSurv.ddl$S=merge_design.covariates(WintSurv.ddl$S,weather.cov,bygroup=FALSE,
 ```
 
 
-#Run the model and compare
-```{r}
+####Run the model and compare
+```{r, error = F, message = F}
 require(RMark)
 RMark.model <- mark(WintSurv.process, 
                     WintSurv.ddl, 
                     model.parameters=list(S=list(formula =~ BC + Ag + For + Snow + Temp, 
                                                  link="logit")))
 
+summary(RMark.model)
+
 ```
 
-
-
-
-#### Pro's and Con's
+### Comparing Bayesian and Frequentist Approaches
 **Definition of Unknown Parameters** - XXX  
 
 **Randomness vs Uncertainty** - [Randomness (frequentist) vs uncertainty (Bayesian) - Nothing is actually random, if we had enough information and a powerful enough computer, you could predict almost any natural system in theory]  
@@ -616,22 +643,22 @@ RMark.model <- mark(WintSurv.process,
 
 ### Sources and Other Resources
 
-This module is a synthesis of ...
-  
-<div style="margin-left: 1em;">  
+  This module is a synthesis of ideas and code found in...  
+<div style="margin-left: 1em;"> 
+  [Dan Gibson's Nest Survival Code](https://dan-gibson.weebly.com/nest-survival-jags.html)  
   Hobbs and Hooten - Bayesian Models: A Statistical primer for Ecologists  
   McElreath - Statistical Rethinking: A Bayesian Course with Examples in R and Stan  
   Kery - Introduction to WinBUGS for Ecologists: A Bayesian approach to regression, ANOVA, mixed models and related analyses  
   Kery and Schaub - Bayesian Population Analysis using WinBUGS: A Hierarchical Perspective
 </div>
   
-I have also found the below resources useful in better understanding bayesian concepts and applications. 
-  
+I have also found the below resources useful in familiarizing myself with and better understanding bayesian concepts and applications.  
   <div style="margin-left: 1em;">  
   [Olivier Giminez's Youtube Channel](https://www.youtube.com/c/OlivierGimenez)  
   [Richard McElreath's Youtube Channel](https://www.youtube.com/channel/UCNJK6_DZvcMqNSzQdEkzvzA/about)  
   [ritvikmath Youtube Channel](https://www.youtube.com/c/ritvikmath)  
   [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/frequentist-vs-bayesian-statistics-resources-to-help-you-choose/)  
   [McGill 2013 - Why saying you are a bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-bayesian-is-a-low-information-statement/)  
+    
       
   </div>
