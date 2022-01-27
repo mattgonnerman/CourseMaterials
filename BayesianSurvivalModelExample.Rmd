@@ -7,7 +7,7 @@ output: html_document
 
 ```{r, setup, include=FALSE}
 lapply(c("dplyr",
-         "ggplot2", 
+         # "ggplot2", 
          "R2jags",
          "RMark", 
          "gtools"),
@@ -27,14 +27,12 @@ lapply(c("dplyr",
 [A Frequentist Alternative: RMark]  
 [Comparing Bayesian and Frequentist Approaches]  
 [Sources and Other Resources]  
-  
-In graduate school, I wanted to learn how to code and run analyses within a Bayesian framework. I found the entire introductory process to be extremely daunting, partly because it was difficult to find an entry point. While there are a plethora of helpful books which go into great detail on the theory and application of Bayesian statistics, they often required a level of statistical knowledge that was difficult to obtain by simply reading and following along with the code. Now that I have more experience developing and running these models, I consider myself an ecologist with (to steal a phrase from my PhD advisor) "just enough knowledge to be dangerous" 
-
-Instead, it can often be helpful to actually run an analysis first and then learn the concepts second so you have a more practical understanding of how things are applied. It is with this in mind that I have written this module. We are going to work through an survival rate analysis together so that we can learn how to answer research questions under a Bayesian framework. I will expand on relevant Bayesian concepts as they arise, but this should not be considered a comprehensive overview of Bayesian theory and techniques. I will approach our analysis using multiple coding options to provide some idea of the options available to you as you move forward with your work.With all that being said, lets outline exactly what we want to accomplish in this lesson. 
 
 ### Objectives
+  
+In graduate school, I set out to teach myself Bayesian statistics but I quickly found the entire introductory process to be extremely daunting, especially as an wildlife ecology student reading mostly statistics textbooks. There are a definitely a plethora of helpful books tailored to ecological questions which go into great detail on the theory and application of Bayesian statistics, but they often require a level of statistical knowledge that is difficult to obtain by simply reading along and rerunning the code. What ultimately worked for me was a much more applied approach. I just started coding using what I knew, solved individual problems as they arose, and luckily the understanding of the stats came after I was more familiar with the tools and process. So with that in mind, I have laid out this module to try emulate my learning experience, focusing on the coding and implementation of a simple model, and only bringing up relevant statistics as they appear. In this way, we can more adequately highlight the decisions and issues, without getting overwhelmed with equations and theory. 
 
-This module is intended as a starting point for learning about the application of Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive description but rather as a means of entry that hopefully will give you confidence to further explore these concepts. I have stripped away much of the details to try and distill what is most relevant for ecologists trying to perform an analysis, and not necessarily make you perfect Bayesian statisticians. To that end, I wrote this module with the following objectives in mind...   
+My hope is that via my intermediate comfort level with the Bayesian process, I can more effectively translate expert knowledge for beginners just starting out. With that being said, this module is intended as a starting point for learning about the application of Bayesian statistics, specifically aimed at graduate students studying ecology who are unfamiliar or uncomfortable with statistics in general. It should not be considered a comprehensive description but rather a means of entry that hopefully will give you confidence to further explore these concepts. I have stripped away much of the details to distill what is most relevant for ecologists trying to build and evaluate statistical models. My goal is not necessarily to make you a perfect Bayesian statisticians, but rather provide you with a manual for how to run analysis with the Bayesian tool set. To that end, I wrote this module with the following objectives in mind...   
   
 <div style="margin-left: 1em;"> 1) To demonstrate how to run a bayesian survival analysis in R from conception through model diagnostics.   
 2) To outline common decisions that must be made throughout process and provide relevant background to inform that decision making process. 
@@ -43,21 +41,22 @@ This module is intended as a starting point for learning about the application o
 
 
 ### Setting Up the R Environment
-While I assume that you have familiarity in R, there are some relevant points to touch on as we get started coding. For example, an important initial step before any real code is written is to ensure that all necessary packages and programs are loaded onto your system and communicating properly with R. Obviously, these will differ according to your data, research questions, and preferences.  
+While you can choose to write in any coding language, I will be using [the R coding environemnt](https://www.r-project.org/) which many of you will already be familiar with. R implemented within R-Studio is a very prevalent tool used by ecologists, partially because it is free and open source. If you are unfamiliar with R, then you will want to spend some time familiarizing yourself with [the R coding basics](https://support.rstudio.com/hc/en-us/articles/201141096-Getting-Started-with-R) before starting on this module.  
   
-Let's start with installing and loading the R packages that we will need. I like to work using the dplyr pipeline so we will use that for data management. I usually assume I will be coding my figures in ggplot2 (because apparently I am both a control-freak and a masochist). We will include the gtools and ??? packages which will provide access to some simple functions that streamline our code without having to write out long equations all the time. We will also load the packages that allow us to actually run our models (R2jags, [NIMBLE], RMark)
+For those ready to jump in, we will first install, update, and load the necessary packages which we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, and freak out. It doesn't mean you screwed up your code necessarily, you will just have to update it to match the new functionality. 
 
 ```{r, eval = F}
-install.packages()
-lapply(c("dplyr","ggplot2", "gtools", "R2jags", "RMark"),
-       require,
-       character.only = T,
-       quietly = T) #Whether to report successful loading of packages 
+install.packages("dplyr", "gtools", "R2jags", "RMark")
+lapply(c("dplyr", #Data management
+         "gtools", #Easy link functions
+         "R2jags", "RMark"), #Running models
+       require, #Function called to load packages
+       character.only = T) #Necessary for lapply functionality
 ```
 
-In addition to making sure packages are loaded, we will also want to ensure that the programs you are using are installed and correctly communicating with R. [Basic flow] [Common Problems]
+In addition to making sure packages are loaded, we will also want to ensure that the programs we are using are correctly installed and communicating with R. We will be using 2 programs for this lesson; [JAGS](https://mcmc-jags.sourceforge.io/) and [MARK](http://www.phidot.org/software/mark/). I will talk about what these programs will be specifically used for later, so let's just focus on getting them to work. Following the links provided, navigate to the installation pages and follow the instructions provided. Often times, if there are issues with this step, it is because the program was installed in an non-standard location (E.G. "C:\\Program Files").
 
-[Code organization. Sourcing individual ] A final note on getting started. One piece of advice I wish I had gotten sooner was to think through the workflow and split up the code into sections and 
+This is also a good place to share some unsolicited advice which I received too late in my graduate career. Before you actually start coding, stop to think through the organization and workflow of your plan. Then, identify the major steps to implementing your code and consider breaking up your R script into sections that reflect these steps. Even with extensive comments, having 100's of lines of code within a single script can make reading code and diagnosing issues very difficult. By breaking up and sourcing our scripts like this, we can better create manageable chunks of code that are well organized and easily referenced. For example, here is how I usually break up and source my code, although I often times have even more divisions within each section depending on what type of modeling I am doing.   
 ```{r eval = F}
 source("1 - DataManagementCode.R")
 source("2 - JAGSModelCode.R")
@@ -68,9 +67,9 @@ source("5 - CreateFigures.R")
 
 
 ### Describing Our Model System
-[Won't focus on decisions specific to the survival analysis and will instead try to highlight decisions and concepts relevant to Bayesian] [For further info on survival rate models, http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf]
+For this module, we will be asking questions about survival of individuals tracked using repeated observations of an individual. As this lesson is geared towards the Bayesian implementation of already conceived modeling techniques, I won't be going into much detail on the reasoning and derivation of survival models. For those unfamiliar, I would suggest <a href="https://doi.org/10.1890/0012-9658(2002)083[3476:ATFMAN]2.0.CO;2">Dinsmore et al. 2002</a> or, for a more detailed discussion on the data requirements and formatting, read [the MARK program documentation](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf)
 
-Since we all have different backgrounds and study animals, lets try and answer a straightforward ecological question. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. To provide some background, wild turkeys are a wide ranging species of game-bird that is hunted across the US. Because of their status as a game species, there is a considerable interest in maintaining healthy populations to keep hunter satisfaction high. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.  
+Since we all have different backgrounds and study animals, let's posit a hypothetical ecological question that is broadly relevant for management. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.  
 
 <div style="margin-left: 1em;"> 
 1) Decreased survival rates will be associated with increased snow depths.
