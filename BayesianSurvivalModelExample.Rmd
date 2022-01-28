@@ -1,5 +1,5 @@
 ---
-title: "A Practical Intro to Bayesian Modeling"
+title: "A Practical Introduction to Bayesian Modeling"
 subtitle: "Wild Turkey Survival in JAGS/NIMBLE"
 author: "Matthew Gonnerman"
 output: html_document
@@ -67,21 +67,32 @@ source("5 - CreateFigures.R")
 
 
 ### Describing Our Model System
+#### Research Question and Hypotheses
 For this module, we will be asking questions about survival of individuals tracked using repeated observations of an individual. As this lesson is geared towards the Bayesian implementation of already conceived modeling techniques, I won't be going into much detail on the reasoning and derivation of survival models. For those unfamiliar, I would suggest <a href="https://doi.org/10.1890/0012-9658(2002)083[3476:ATFMAN]2.0.CO;2">Dinsmore et al. 2002</a> or, for a more detailed discussion on the data requirements and formatting, read [the MARK program documentation](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf)
 
-Since we all have different backgrounds and study animals, let's posit a hypothetical ecological question that is broadly relevant for management. I spent my graduate career studying many aspects of wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkeys ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. A state agency may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So broadly our research question is going to be "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.  
+Since we all have different backgrounds and study animals, let's posit a hypothetical ecological question that is broadly relevant for management. I spent my graduate career studying wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. While in core areas of the species range, turkeys can subsist on hardwood mast throughout the winter, at their northern range limit, deep snow depths and icy conditions inhibit a turkey's ability to find adequate food sources. At the same time, low temperatures and high winds make thermoregulation more difficult, increasing energetic demands. If a state agency identfied winter as a major period of depressed survival for turkeys, they may wish to differentiate between these two causes of mortality as they could lead to different mitigation tacts. If inability to find natural food sources is depressing turkey survival, providing supplemental food sources during the winter would be a viable option for improving survival. If cold temperatures and wind are the issue, then a better management option may be to ensure adequate cold-weather refugia in areas where it is not currently available. So, to make sure we explicitly state our research question, we want to ask "How does winter weather impact the survival of wild turkeys in the northeastern United States." We will also want to explicitly state our hypothesis which will aid in model construction.  
 
 <div style="margin-left: 1em;"> 
 1) Decreased survival rates will be associated with increased snow depths.
 2) Decreased survival rates will be associated with decreased temperatures.
 </div>
 
-But maybe we think there are some other relationships that could be driving winter survival, so we will want to test some other hypotheses related to individual turkey characteristics. For example, maybe we decide to collect weight and size information to measure some metric for body condition at capture. This could give us an overall sense of how "healthy" a turkey is when we capture it. Alternatively, maybe the type of habitat a turkey occupies will influence the availability of natural and anthropogenic food sources. While we could collect very detailed to address such a hypothesis, for the purposes of this lesson we will simplify our hypothesis to describe the dominant land cover type found in an individual turkeys home range. So our two additional hypothesis will look like...
+But maybe we think there are other factors driving winter survival related to individual turkey behaviors and physiology. For example, body condition at capture may be a general indicator for how "healthy" a bird is, which may translate into variable survival throughout the winter. We can use weight and body measurements at capture to provide some metric of body condition which we can incorporate into our model. Alternatively, maybe the type of habitat a turkey occupies will influence the availability of natural and anthropogenic food sources. While we could collect very detailed location data to address such a hypothesis, for the purposes of this lesson we will simplify our data to describe dominant land cover classes found in individual turkey home ranges. So our two additional hypothesis will be...
 
 <div style="margin-left: 1em;"> 
 3) Decreased survival rates will be associated with decreased body condition metrics.
 4) Turkeys that primarily occupy forested landscape will experience decreased survival compared to those that occupy agricultural or suburban landscapes.
 </div>
+
+#### Known and Unknown Information
+Clearly stated hypotheses are important for producing unbiased scientific studies, but they are also useful for model building. By thinking about these concepts early in the process of formulating our model, we are able to identify components that will comprise the puzzle pieces that we need to fit together; random parameters and fixed data. To differentiate between what is a parameter and what is data, we can consider what information is known versus what is unknown. More specifically, what is "fixed" versus what is "random". Any fixed value that will not change within the model can be considered known. Conversely, if a[Known information is ... . It isn't overly complicated to see how the data we collect can be considered known, but unknwon information is a more abstract classification that could include a variety of concepts]. [List of potential unknown information types].  [Why do we need to differentiate between known and unknown info?].  
+  
+So let's apply these ideas to our model system and hypotheses. To answer questions about wild turkey winter survival, we can rely on radio-telemetry methodology to monitor individuals turkeys through the winter. The data we collect will be our known information comprised of the live/dead status of each bird over time. It will also include any ancillary information we want to relate to survival, which in our case is weather measurements (snow accumulation and temperature), individual turkey biometrics (body condition), and landscape information (major land cover class).
+
+
+### Simulating our Model System
+Now that we have laid out our research question and hypotheses, let's simulate some data. Simulated data will be  useful for learning these concepts but it also provides a level of control that facilitates model construction. Specifically, by generating the data ourselves, we will know whether our model outputs are accurate to the real values, which we can specify to be any value we wish. It also allows us to include as much or as little noise related to <abbr title="NEED A DEFINITION HERE">observation error</abbr> or <abbr title="NEED A DEFINITION HERE">process error,</abbr> which will allow us to assess how the model reacts to random variation in the data we provide it. If we were to start with real data, we would have much less capacity to determine whether the values we were getting were accurate.
+
 
 [Useful to have all the known parameter values in the same place at the beginning of the code. Makes it easier to change and rerun everything.]
 ```{r}
@@ -121,8 +132,8 @@ gtools::inv.logit(alpha.s) - gtools::inv.logit(alpha.s+beta.for)
 ```
 
 
-### Simulating our Model System
-So, now we are going to simulate some data that is collected from our simulated population. This may sound a bit silly, but it allows us to [EXPLAIN WHY THIS IS USEFUL] but. So, what kind of data would we collect to monitor survival? We could use radiotelemetry to monitor the live/dead status of a bird. With weekly checks, we could monitor for when a given bird dies, tracking it survival history. 
+
+
 
 
 We are going to survival for hypothetical turkeys in Maine. This has the benefit of letting us know we got the answer correct. So we are going to simulate a number of 3 month survival histories for birds. We are interested in January through March, when winter is the most harsh
@@ -132,6 +143,8 @@ Now that our R environment is ready, lets first lets define the relationships. L
 Define the relevant variables which will determine the dynamics of our system
 
 [z-standardize, aids in interpretation and simplifies process. Encourage standardizing, can link to or show expample how to do.]
+
+
 
 
 #### Simulate individual turkey characteristics and associated weather information
@@ -210,17 +223,10 @@ ind.surv.hist[1,]
 sum(ind.surv.hist[,w.days + 1], na.rm = T)
  
 ```
-#### Known and Unknown Information
-
-The first step in Bayesian model building is going to involve thinking through your system and identifying all of the known and unknown information that will need to be included in the model. This is why first describing your system and stating the research question and hypothesis is so important. It lays all the information out for you.
-
-Known information will often be some version of the data that you collected. If we wished to study wild turkey survival, a frequently used option will be a radio-telemetry study. 
-
-In the case of our turkey example, the knowns are turkey locations, individual turkey characteristics, and associated land cover at each location. The unknowns are the underlying relationships that define how these two data sets relate to one another. Do turkeys select for a given land cover type consistently more than others? Is there some effect of weather on selection? Maybe a turkey's sex or age affects their decision-making process? What about time of day? While in practice these decisions can be described using increasingly complex modeling techniques, we can simplify a decision to a weighted coin flip describing whether a turkey would select one option over another. For the sake of being on the same page, lets use this system and data as an example throughout the module to describe these coin flips. Specifically, we wish to know how much the presence of snow impacts a turkey's use of forested over other land cover options. 
-
-So now we have our data and the research question we wish to answer, but we still need to determine how we will approach our analysis (ideally this is done in the planning stage of your research). Within the field of ecology, we tend to choose an approaches that fall within one of two paradigms, bayesian or frequentist statistics. There are many similarities and distinctions  in the methods used between the two (which we will summarize at the end of this module), but the core difference lies in how each approaches known and unknown information. 
 
 ####Simulate Resulting Survival history
+So, now we are going to simulate some data that is collected from our simulated population. This may sound a bit silly, but it allows us to [EXPLAIN WHY THIS IS USEFUL] but. So, what kind of data would we collect to monitor survival? We could use radiotelemetry to monitor the live/dead status of a bird. With weekly checks, we could monitor for when a given bird dies, tracking it survival history. 
+
 ```{r}
 obs.rate <- .95 #We can't expect to observe each turkey every day, so this just randomizes whether we successfully collect data on a bird on a given day. Let's assume that on average we find a bird every 4 days.
 
@@ -489,6 +495,8 @@ Surv_JAGS_output <- jags(data = data.list,
                         n.thin = nt,
                         n.chains = nc) 
 ```
+#### Common Errors
+[Heather Gaya GitHub](https://github.com/heathergaya/JAGS-NIMBLE-Tutorials/tree/master/JAGS_Errors)
 
 #### Model Diagnostics and Reporting Results (JAGS)
 [Different components of the output object]
@@ -564,7 +572,7 @@ So you may be thinking, "if its so easy to do this using a frequentist framework
 [Phidot link](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf)
 
 #### Format the Data
-```{r}
+```{r, warning=F, message=F}
 EH.rmark <- as.data.frame(obs.hist.mat)[-1,] %>%
   mutate(TurkID = row_number()) %>%
   rowwise() %>%
@@ -609,7 +617,7 @@ WintSurv.ddl$S=merge_design.covariates(WintSurv.ddl$S,weather.cov,bygroup=FALSE,
 
 
 ####Run the model and compare
-```{r, error = F, message = F}
+```{r, error = F, message = F, warning=F}
 require(RMark)
 RMark.model <- mark(WintSurv.process, 
                     WintSurv.ddl, 
@@ -658,6 +666,7 @@ I have also found the below resources useful in familiarizing myself with and be
   [ritvikmath Youtube Channel](https://www.youtube.com/c/ritvikmath)  
   [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/frequentist-vs-bayesian-statistics-resources-to-help-you-choose/)  
   [McGill 2013 - Why saying you are a bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-bayesian-is-a-low-information-statement/)  
+  [rasmusab Youtube Channel](https://www.youtube.com/channel/UCO7kJ__JJ4v4RQU3ZymR3Kw)
     
       
   </div>
