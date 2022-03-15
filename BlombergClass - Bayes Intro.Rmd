@@ -1,6 +1,6 @@
 ---
 title: "A Practical Introduction to Bayesian Modeling"
-subtitle: "Wild Turkey Survival in JAGS/NIMBLE"
+subtitle: "Wild Turkey Survival in JAGS"
 author: "Matthew Gonnerman"
 output: html_document
 ---
@@ -17,7 +17,7 @@ lapply(c("dplyr",
 ```
 ### Outline:
 [This Lesson...]  
-[Major Concepts in Bayesian Stats]
+[Bayes Theorem]
 [Setting Up the R Environment]  
 [Describing Our Model System]  
 [Simulating our Model System]  
@@ -50,36 +50,34 @@ $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
 #### Linking Theory and Information
 Let's breakdown each component within this equation to better understand what each means and what purpose they serve.
 
+**Posterior Distribution** - $Pr(\theta|y)$  
+We will start on the left hand side of the equation with the posterior distribution, which represents our estimates of unknown parameters based on the data and priors provided to the model. 
+
+*Aside:* A key characteristic of the posterior distribution is that it integrates to 1. What this means practically is that we are able to me probabilistic statements about $\theta$, which is not possible using other likelihood appoaches such as MLE. This also means that unknown values such as $\theta$ can be treated as random variables, which differentiates Bayesian stats from other approaches. 
+
 **Likelihood** - $Pr(y|\theta)$  
-For those familiar with Maximum Likelihood Estimation, the likelihood of Bayes Theorem functions very similarly to the likelihood of an MLE. It links unobserved parameters with known information to find the most likely values of $\theta$ given observed values for *y*.   
+For those familiar with Maximum Likelihood Estimation, the likelihood of Bayes Theorem functions very similarly, linking unobserved parameters with known information to find the most likely values of $\theta$ given observed values for *y*.   
 
 **Prior Distribution** - $Pr(\theta)$  
-The prior distribution represents any information we have about $\theta$ prior to collecting data. 
+The prior distribution represents any information we have about $\theta$ prior to collecting data. This can be in the form of an **informative** or **uniformative** prior distribution. An informative prior implies that we have some prior knowledge about the system we are working with. This could be previous research that has estimated the same or similar parameters as those you are interested and therefore can be used to contrain our estimates. It may also be more vague, such as in the form of expert opinion, which is used to more weakly influence our estimates but still accommodates our expectations about the system. Prior information can be as vague as knowing which type of distribution should be used as a prior for a given parameter. 
 
-[Uninformative priors] In the same way that a prior can represent our knowledge of a parameter, it can also be used to represent that we don't have any prior knowledge of a system and adjust our estimates accordingly, [Benefits of this] 
-
-*Aside:* Prior information is often mistakenly attributed as a defining feature of Bayesian statistics, but this is incorrect. While not often integrated into alternative approaches, use of prior information is not unique to Bayesian statistics, but it is required to conduct Bayesian statistics.
-
- 
-
-**Marginal Distribution** - $Pr(y)$  
-[Probability of the data] [Can be calculated but doesn't have to be] [Explain basics the segue to...]  
+In the same way that a prior can represent our knowledge of a parameter, it can also be used to represent that we don't have any prior knowledge of a system and adjust our estimates accordingly. In such cases, we often choose to use some flat prior distribution. This could be a uniform distribution across a set of values, a normal distribution with a mean of 0 and a very large standard deviation, or a beta distribution. While representing our lack of information may seem arbitrary, in practice the use of such priors can have dramatic impacts on posterior estimates. Ultimately, the type of prior you use will depend on the information you have available to you and the model you are working with.  
+  
+*Aside:* Prior information is often incorrectly attributed as a defining feature of Bayesian statistics. While not often integrated into alternative approaches, use of prior information is not unique to Bayesian statistics but it is required to conduct Bayesian statistics.  
 
 **Joint Distribution** - $Pr(y|\theta)Pr(\theta)$  
-[Product of the likelihood and the prior] [Proportional to the Posterior. Means that where the joint distribution is maximized, so too will the posterior be maximized. Allows us to ignore the marginal distribution]  
+The joint distribution is the product of the likelihood and the prior distribution and is proportional to the posterior distribution. This means where the joint distribution is maximized, the posterior distribution will also be maximized.
 
-**Posterior Distribution** - $Pr(\theta|y)$  
-[This is the most important quantity in Bayesian inference, goal of the analysis.] [Represents information about unknown parameters based on the data and priors provided.] 
+**Marginal Distribution** - $Pr(y)$  
+The marginal distribution defines the probability that the observed data would occur independent of other influences. Mathematically, the marginal distribution is equivalent to the integral of the joint distribution and is used to ensure that the posterior distribution integrate to 1. Put simply, dividing by the marginal distribution means that the posterior distribution will be a probabilistic statement. 
 
-[Every posterior distribution used to be a prior]
-
-[Later we will discuss how to use Markov Chain Monte Carlo simulations to sample from the joint distribution to estimate the posterior distribution, but first lets introduce a model system to work with and try constructing a model.]
+Later we will discuss how Bayes theorem is applied to Markov Chain Monte Carlo simulations to sample from the joint distribution and estimate the posterior distribution, but first lets take a break from statistics and introduce a model system that we can use as our example.
 
 ### Describing Our Model System
 #### Research Question and Hypotheses
-Now that the preparatory steps are complete, we can introduce our model system. For this module, we will be estimating survival rates using repeated observations of an individual. As this lesson is geared towards the Bayesian implementation of already conceived modeling techniques, I won't be going into much detail on the reasoning and derivation of daily survival rate models. For those unfamiliar, I would suggest <a href="https://doi.org/10.1890/0012-9658(2002)083[3476:ATFMAN]2.0.CO;2">Dinsmore et al. 2002</a> or, for a more detailed discussion on the data requirements and formatting, read [the MARK program documentation](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf).
+For this module, we will be estimating survival rates using repeated observations of an individual. As this lesson is geared towards the Bayesian implementation of already conceived modeling techniques, I won't be going into much detail on the reasoning and derivation of daily survival rate models. For those unfamiliar, I would suggest <a href="https://doi.org/10.1890/0012-9658(2002)083[3476:ATFMAN]2.0.CO;2">Dinsmore et al. 2002</a> or, for a more detailed discussion on the data requirements and formatting, read [the MARK program documentation](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf).
 
-Since we all have different backgrounds and study animals, let's posit a hypothetical ecological question that is broadly relevant for management. I spent graduate school studying wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. While turkeys can subsist on hardwood mast throughout the winter in core areas of the species range, deep snow depths and icy conditions inhibit a turkey's ability to find adequate food sources at their northern range limit. At the same time, low temperatures and high winds make thermoregulation more difficult which increases energetic demands. So knowing that winter is a period of increased stress and mortality for turkeys, we wish to ask the question **what factors influence daily survival of wild turkeys in winter?** 
+Since we all have different backgrounds and study animals, let's posit a hypothetical ecological question that is broadly relevant for management. I spent graduate school studying wild turkey ecology, so let's use survival rates within turkey populations in New England as our study system. While turkeys can subsist on hardwood mast throughout the winter in core areas of the species range, deep snow depths and icy conditions inhibit a turkey's ability to find adequate food sources at their northern range limit. At the same time, low temperatures and high winds make thermoregulation more difficult which increases energetic demands. So knowing that winter is a period of increased stress and mortality for turkeys, we may wish to ask the question **what factors influence daily survival of wild turkeys in winter?** 
 
 To address this question, we will need to propose hypotheses to evaluate. For example, we may expect birds that are generally healthy to be better equipped to deal with harsh conditions and inadequate food. Alternatively, maybe the type of habitat a turkey occupies will influence the availability of natural and anthropogenic food sources. With these two ideas in mind, our hypotheses will be...
 
@@ -91,13 +89,54 @@ To address this question, we will need to propose hypotheses to evaluate. For ex
 #### Data and Unknowns
 Clearly stated hypotheses are an important step in producing transparent and unbiased research, but they are also generally useful for providing guidance during model building. By explicitly formulating research questions and potential hypotheses, we are able to identify components that will comprise our model;known and unknown information. Consider that we "view data as the observed realizations of stochastic systems that contain one or several random processes" (Kery 2010). To simplify this statement, our known information is determined by a series of processes that are defined by the unknown information that we wish to estimate. In general, known information is comprised of the data collected to describe some effect or relationships. So in the case of wild turkey winter survival, we could use radio-telemetry to monitor turkeys through the winter. The data we collect will be our known information comprised of the live/dead status of each bird at each visit. It will also include any ancillary information we want to relate to survival, which in our case is individual turkey biometrics (body condition at capture) and landscape information (major land cover class). 
 
-Determining what constitutes relevant unknown information is a more complicated task as it requires familiarity with the statistical methods. This is because, depending on what we think is affecting survival and how we choose to measure it, there are many parameters and sources of variation that we could potentially include into our model. For example, if we were to conduct a mark-recapture study to determine survival, is there some observation process (i.e., variable detection rates) that must be incorporated to account for imperfect detections? Similarly, if we are going to use covariates such as body metrics and habitat to describe variation in survival, we will need to estimate parameters to describe those beta coefficients and the regression intercept. We can also try to account for many of the sources of noise in our system, such as incorporating random effects to describe unmeasured variation among individuals or groups of individuals. As you can tell, the number of parameters we need to estimate increases quickly as we add assumptions and additional data sources. Importantly, though we won't explicitly measure and incorporate every potential variable that influences survival, we can still account for them indirectly in the model through these different error sources, such as random effects. This list could be endless as you can make the model as complicated or simple as you desire, so an important step is differentiating what is relevant to your research question. This will likely be dependent on the question you are asking, your prior knowledge of the system, and the potential monitoring and management options. [NEED TO SAY WHAT UNKNOWNS WE WILL FOCUS ON]
+Determining what constitutes relevant unknown information is a more complicated task as it requires familiarity with the statistical methods. This is because, depending on what we think is affecting survival and how we choose to measure it, there are many parameters and sources of variation that we could potentially include into our model. For example, if we were to conduct a mark-recapture study to determine survival, is there some observation process (i.e., variable detection rates) that must be incorporated to account for imperfect detections? Similarly, if we are going to use covariates such as body metrics and habitat to describe variation in survival, we will need to estimate parameters to describe those beta coefficients and the regression intercept. We can also try to account for many of the sources of noise in our system, such as incorporating random effects to describe unmeasured variation among individuals or groups of individuals. As you can tell, the number of parameters we need to estimate increases quickly as we add assumptions and additional data sources. Importantly, though we won't explicitly measure and incorporate every potential variable that influences survival, we can still account for them indirectly in the model through these different error sources, such as random effects. This list could be endless as you can make the model as complicated or simple as you desire, so an important step is differentiating what is relevant to your research question. This will likely be dependent on the question you are asking, your prior knowledge of the system, and the potential monitoring and management options. So to determine what all the unknowns of our proposed system are, let's jump into model construction.
 
-#### The Model
+### Building Our Survival Model
+We are next going to attempt to construct a daily survival rate model from scratch. There is no correct way to go about model construction, so I will offer up my approach as one option. First, let's identify all known information that we will be inputting into the model. For the purposes of learning, we will ignore the intricacies of coding a model and focus more on first constructing a theoretical model and then code it later. 
+First, we have our observed survival information in the form of daily live/dead statuses for each individual visited, which we will abbreviate as *OBS*. We also have the body condition of each bird, *BC*, and whether a turkey was in a suburban, forested (*FOR*), or agriculture (*AG*) dominated landscape. We next need to describe our observed data *OBS* according to the underlying process that determines individual survival outcomes. When we simplify this relationship, it becomes a weighted coin-toss with a binary outcome. Every day a turkey will either survive to the next day or die. For such "coin-toss" dynamics, it is common to use a Bernoulli distribution, which has a single parameter which we will abbreviae to *S*. We can right the relationship between *OBS* and *S* as
+
+$$OBS \sim \text{Bernoulli}(S)$$
+which says that the probability of observing a bird alive on a given day follows a bernoulli distribution with a probability of *S*. If we believe that *S* will differ among individuals, we can add notation *i* as a subscript to denote differences in survival among individuals...
+
+$$OBS_i \sim \text{Bernoulli}(S_i)$$
+Considering that our hypotheses specify such individual differences in survival associated with body condition and habitat, we will need a means to estimate variation in *S* by these covariates. This can be achieved using linear regression
+
+$$
+S_i = \alpha + \boldsymbol{\beta X_i} + \epsilon 
+$$
+where $\alpha$ is an intercept term, $\boldsymbol{\beta X_i}$ is a series of beta coefficients and associated individual-specific covariate values, and $\epsilon$ represents unspecified variation in *S*. However, because *S* is a probability, it must be constrained between 0 and 1 which is not the case for the above equation. Instead, we can use the logit link function to ensure that *S* remains within realistic boundaries...
+
+$$ 
+S_i = \frac{exp(\alpha + \boldsymbol{\beta X_i} + \epsilon)}{1 + exp(\alpha + \boldsymbol{\beta X_i} + \epsilon)}
+$$
+or written more simply...
+
+$$
+\text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon
+$$
+So based on the model thus far, our unknown parameters include *S*, $\alpha, \beta, \textrm{ and }\epsilon$. We can estimate all of these with our proposed data, but we will also need to supply some prior values. Considering this is a hypothetical relationship, we will keep things simple and use uninformative priors. Uninformative priors for beta coefficients and error terms such as $\beta \textrm{ and }\epsilon$ can take many forms, but a simple option is a 0 centered normal distribution with a very wide standard deviation 
+
+$$
+\beta \sim \text{Normal}(\mu = 0,\sigma = 10000)
+$$
+We will also wish to provide a starting value for $\alpha$, but this will be slightly more complicated. Remember that for a linear regression, $\alpha$ represents the expected value when all covariates are equal to 0. Therefore, $\alpha$ is the probabiltiy of survival when all covariates (*BC*, *FOR*, and *AG*) equal 0 and must be constrained to between 0 and 1. We can do this using a flat beta distribution and the logit link function
+
+$$
+\text{logit(}\alpha) = \text{Beta}(1,1)
+$$
+When we combine all of these statements together, we have a basic Bayesian model for survival
+
+$$
+OBS_i \sim \text{Bernoulli}(S_i)\\
+\text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon \\
+\text{logit(}\alpha) = \text{Beta}(1,1) \\
+\beta \sim \text{Normal}(\mu = 0,\sigma = 10000) \\
+\epsilon \sim \text{Normal}(\mu = 0,\sigma = 10000)
+$$
 
 
-### Setting Up the R Environment
-Before we get started with any modeling, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
+### Prepare the R Environment
+Now that we have a model, we will need to figure out how to translate it and any associated data we wish to supply to the model into a form that can be used. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
 
 ```{r, eval = F}
 install.packages("dplyr", "gtools", "R2jags", "RMark")
