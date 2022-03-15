@@ -1,0 +1,66 @@
+---
+title: "Resource Selection Functions"
+author: "Matthew Gonnerman"
+date: "2/14/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Terminology
+Lele et al. 2013 - Selection, use, choice and occupancy: clarifying concepts in resource selection studies
+
+#RSF vs RSPF
+
+
+# Types of RSFs
+[The Basics]
+## Resource Selection Functions
+Boyce et al. 2002 - Evaluating resource selection functions
+
+Johnson et al. 2007 - A General Framework for the Analysis of Animal Resource Selection from Telemetry Data
+
+### Use-Unused Design
+
+### Use-Available Design
+
+##Scale of Selection
+Johnson 1980 - The comparison of usage and availability measurements for evaluating resource preference
+Boyce 2006 - Scale for resource selection functions
+
+
+## Multigrain Resource Selection Functions
+Laforge et al. 2015 - Process-focused, multi-grain resource selection functions
+[Dealing with Scale of Selection]
+
+## Step Selection Functions
+Forester et al 2009 - Accounting for animal movement in estimation of resource selection functions: sampling and data analysis
+
+Thurfjell et al. 2014 - Applications of step-selection functions in ecology and conservation
+[More realistic decisions]
+
+Signer et al. 2017 - Estimating utilization distributions from fitted step-selection functions
+
+Avgar et al. 2015 - Integrated step selection analysis: bridging the gap between resource selection and animal movement
+
+Michelot et al. 2018 - Linking resource selection and step selection models for habitat preferences in animals
+
+## Weighted Distributions
+Lele 2010 - A New Method for Estimation of Resource Selection Probability Function
+
+Lele and Keim 2006 - Weighted distributinos and estimation of resource selection probability functions
+
+## Temporal/Spatial Variation
+Hooten et al. 2014 - Temporal variation and scale in movement-based resource selection functions
+
+## Individual Variation
+Muff et al. 2019 - Accounting for individual-specific variation in habitat-selection studies: Efficient estimation of mixed-effects models using Bayesian or frequentist computation
+
+## Functional Responses
+
+## Scaling estimates up to Landscape Predictions
+
+## Assessing Models
+Gerber and Northrup 2019 - Improving spatial predictions of animal resource selection to guide conservation decision making

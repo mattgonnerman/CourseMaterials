@@ -1,0 +1,45 @@
+---
+title: "N-Mixture Model Introduction"
+author: "Matthew Gonnerman"
+date: "2/8/2022"
+output: powerpoint_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Abundance information is used throughout ecology
+- Population Monitoring
+- Harvest Management
+- Forecasting Populations Trajectories
+
+# Ways to Collect Count Data
+- Point Counts
+- Autonomous Recording Units
+  - Cameras
+  - Audio Recorders
+- Aerial Surveys
+- 
+
+# Why not use raw count numbers?
+- Heterogeneity in abundance
+- Heterogeneity in detection rates
+
+# Possible distributions to describe density
+## [Joseph et al. 2009](https://doi-org.wv-o-ursus-proxy02.ursus.maine.edu/10.1890/07-2107.1)
+- Poisson
+- Zero-Inflated Poisson
+- Negative Binomial
+- Zero-Inflated Negative Binomial
+
+# The N-Mixture Model
+$Y_{i,t} \sim binomial(N_i,p)$  
+  
+$N_i \sim poisson(\lambda)$  
+  
+$\lambda = e^ {\beta_0 + \beta_1 + ...}$  
+  
+$p = logit(\alpha_0 + \alpha_1 + ...)$  
+  
+$logit(\alpha) = \frac{e^\alpha}{1 + e^\alpha}$  
