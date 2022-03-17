@@ -17,21 +17,20 @@ lapply(c("dplyr",
 ```
 ### Outline:
 [This Lesson...]  
-[Bayes Theorem]
-[Setting Up the R Environment]  
+[Bayes Theorem]  
 [Describing Our Model System]  
-[Simulating our Model System]  
+[Building Our Survival Model]  
+[Prepare the R Environment]  
+[Simulating our Model System]   
 [From Hypothesis to Model]  
-[MCMC: Sampling from the Posterior]   
-[Translating Model to Code: An Example in JAGS]  
-[A Bayesian Alternative: NIMBLE]  
+[Alternative MCMC Samplers]  
 [A Frequentist Alternative: RMark]  
 [Comparing Bayesian and Frequentist Approaches]  
 [Sources and Other Resources]  
 
 
 ### This Lesson...
-This exercise is meant as an introductory point for you to learn about the theory behind and application of Bayesian statistics. With that in mind, this will be a surface level exploration of foundational concepts in Bayesian statistics and how to apply these concepts to answer specific research questions. I hope to achieve the following objects...
+This exercise is meant as an introductory point for you to learn about the theory behind and application of Bayesian statistics. With that in mind, this will be a surface level exploration of foundational concepts and how to apply these concepts to answer specific research questions. I hope to achieve the following objectives...
 
 <div style="margin-left: 1em;"> 1) To demonstrate how to formulate and code a Bayesian analysis in R from conception through model diagnostics.   
 2) To outline common decisions that must be made throughout process and provide relevant background to inform that decision making process. 
@@ -41,27 +40,27 @@ This exercise is meant as an introductory point for you to learn about the theor
 
 
 ### Bayes Theorem
-Before we begin any actual analysis, let's briefly introduce the foundational equation behind Bayesian statistics, called **Bayes Theorem**. Assume there is a study system which is experiencing some relationship which we wish to approximate. Let the unknown effects defining the relationship and any associated uncertainty be represented by $\theta$ and any information we collect to describe the effect be represented as *y*. We wish to ask what are the most likely values for $\theta$ given *y*, otherwise written as $Pr(\theta|y)$. We can approach this question by considering the joint probability of _**y**_ and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rewritten using basic rules of conditional probability as shown below...   
+Before we begin any actual analysis, let's briefly introduce the foundational equation behind Bayesian statistics, called **Bayes Theorem**. Assume there is a study system which is experiencing some relationship which we wish to approximate. Let the unknown effects defining the relationship and any associated uncertainty be represented by $\theta$ and any information we collect to describe the effect be represented as *y*. We wish to ask what are the most likely values for $\theta$ given *y*, otherwise written as $Pr(\theta|y)$. We can approach this question by considering the joint probability of *y* and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rewritten using basic rules of conditional probability as shown below...   
 
 $$ Pr(y, \theta) = Pr(\theta|y)Pr(y) = Pr(y|\theta) Pr(\theta)$$  
 
 When we breakdown these probability statements, we find that the probability of both *y* and $\theta$ occurring together is the same as the probability of *y* occurring multiplied by the probability of $\theta$ occurring given that y also occurs (this can also be written with y and $\theta$ reversed). Using basic algebra, we can rearrange our equation to create the below statement, which is Bayes Theorem, and it provides a means to estimate the most appropriate value for $\theta$ given observed values for *y*.  
 $$ Pr(\theta|y) = \frac{Pr(y|\theta) Pr(\theta)}{Pr(y)}$$
 #### Linking Theory and Information
-Let's breakdown each component within this equation to better understand what each means and what purpose they serve.
+Let's briefly breakdown each component within this equation to better understand what each means and what purpose they serve. For more in depth descriptions of Bayes theorem and its components, check out chapter 2 in Statistical Rethinking or chapter 5 in Hobbs and Hooten 2015.
 
 **Posterior Distribution** - $Pr(\theta|y)$  
-We will start on the left hand side of the equation with the posterior distribution, which represents our estimates of unknown parameters based on the data and priors provided to the model. 
+We will start on the left hand side of the equation with the posterior distribution, which is "the relative plausibility of different values for $\theta$, conditional on the data" (from Statistical Rethinking). This means that we can use the posterior distribution to describe our estimates of unknown parameters based on the data and priors provided to the model. 
 
-*Aside:* A key characteristic of the posterior distribution is that it integrates to 1. What this means practically is that we are able to me probabilistic statements about $\theta$, which is not possible using other likelihood appoaches such as MLE. This also means that unknown values such as $\theta$ can be treated as random variables, which differentiates Bayesian stats from other approaches. 
+A key characteristic of the posterior distribution is that it integrates to 1. This has mathematical implications, but what it means practically is that we are able to me probabilistic statements about $\theta$, which is not possible using other likelihood approaches such as MLE. This also means that unknown values such as $\theta$ can be treated as random variables, which differentiates Bayesian from Frequentist approaches. 
 
 **Likelihood** - $Pr(y|\theta)$  
 For those familiar with Maximum Likelihood Estimation, the likelihood of Bayes Theorem functions very similarly, linking unobserved parameters with known information to find the most likely values of $\theta$ given observed values for *y*.   
 
 **Prior Distribution** - $Pr(\theta)$  
-The prior distribution represents any information we have about $\theta$ prior to collecting data. This can be in the form of an **informative** or **uniformative** prior distribution. An informative prior implies that we have some prior knowledge about the system we are working with. This could be previous research that has estimated the same or similar parameters as those you are interested and therefore can be used to contrain our estimates. It may also be more vague, such as in the form of expert opinion, which is used to more weakly influence our estimates but still accommodates our expectations about the system. Prior information can be as vague as knowing which type of distribution should be used as a prior for a given parameter. 
+The prior distribution represents any information we have about $\theta$ prior to collecting data. This can be in the form of an **informative** or **uninformative** prior distribution. An informative prior implies that we have some prior knowledge about the system we are working with. This could be previous research that has estimated the same or similar parameters as those you are interested and therefore can be used to constrain our estimates. It may also be more vague, such as in the form of expert opinion, which is used to more weakly influence our estimates but still accommodates our expectations about the system. Prior information can be as vague as knowing which type of distribution should be used as a prior for a given parameter. 
 
-In the same way that a prior can represent our knowledge of a parameter, it can also be used to represent that we don't have any prior knowledge of a system and adjust our estimates accordingly. In such cases, we often choose to use some flat prior distribution. This could be a uniform distribution across a set of values, a normal distribution with a mean of 0 and a very large standard deviation, or a beta distribution. While representing our lack of information may seem arbitrary, in practice the use of such priors can have dramatic impacts on posterior estimates. Ultimately, the type of prior you use will depend on the information you have available to you and the model you are working with.  
+In the same way that a prior can represent our knowledge of a parameter, it can also be used to represent that we don't have any prior knowledge of a system and adjust our estimates accordingly. In such cases, we often choose to use some flat prior distribution, otherwise called "uninformative". This nomenclature is a bit confusing because any prior we use implies some information. This could be a uniform distribution across a set of values, a normal distribution with a mean of 0 and a very large standard deviation, or a beta distribution. Each decision relies on some knowledge of the system and what values are reasonable/expected. While integrating our lack of information may seem arbitrary, in practice the use of such priors can have regularizing effects on posterior estimates. This means that even the most basic of priors will have some pull towards the center, which can greatly improve posterior estimates. These regularizing effects are especially useful when working with very limited data.
   
 *Aside:* Prior information is often incorrectly attributed as a defining feature of Bayesian statistics. While not often integrated into alternative approaches, use of prior information is not unique to Bayesian statistics but it is required to conduct Bayesian statistics.  
 
@@ -91,52 +90,25 @@ Clearly stated hypotheses are an important step in producing transparent and unb
 
 Determining what constitutes relevant unknown information is a more complicated task as it requires familiarity with the statistical methods. This is because, depending on what we think is affecting survival and how we choose to measure it, there are many parameters and sources of variation that we could potentially include into our model. For example, if we were to conduct a mark-recapture study to determine survival, is there some observation process (i.e., variable detection rates) that must be incorporated to account for imperfect detections? Similarly, if we are going to use covariates such as body metrics and habitat to describe variation in survival, we will need to estimate parameters to describe those beta coefficients and the regression intercept. We can also try to account for many of the sources of noise in our system, such as incorporating random effects to describe unmeasured variation among individuals or groups of individuals. As you can tell, the number of parameters we need to estimate increases quickly as we add assumptions and additional data sources. Importantly, though we won't explicitly measure and incorporate every potential variable that influences survival, we can still account for them indirectly in the model through these different error sources, such as random effects. This list could be endless as you can make the model as complicated or simple as you desire, so an important step is differentiating what is relevant to your research question. This will likely be dependent on the question you are asking, your prior knowledge of the system, and the potential monitoring and management options. So to determine what all the unknowns of our proposed system are, let's jump into model construction.
 
-### Building Our Survival Model
-We are next going to attempt to construct a daily survival rate model from scratch. There is no correct way to go about model construction, so I will offer up my approach as one option. First, let's identify all known information that we will be inputting into the model. For the purposes of learning, we will ignore the intricacies of coding a model and focus more on first constructing a theoretical model and then code it later. 
-First, we have our observed survival information in the form of daily live/dead statuses for each individual visited, which we will abbreviate as *OBS*. We also have the body condition of each bird, *BC*, and whether a turkey was in a suburban, forested (*FOR*), or agriculture (*AG*) dominated landscape. We next need to describe our observed data *OBS* according to the underlying process that determines individual survival outcomes. When we simplify this relationship, it becomes a weighted coin-toss with a binary outcome. Every day a turkey will either survive to the next day or die. For such "coin-toss" dynamics, it is common to use a Bernoulli distribution, which has a single parameter which we will abbreviae to *S*. We can right the relationship between *OBS* and *S* as
+### Building Our Survival Model  
+Up to this point, we have explicitly stated our research question and hypotheses which we wish to test. We have also translated those hypotheses into a statistical model which we need to translate further into code that can be read by R. This will explicitly define how our data is used within the model and therefore determine how it needs to be collected and formatted for the model to function appropriately. Considering we have walked through the model construction, I will present the final model in the appropriate JAGS coding 
+data in the form of daily survival checks and individual-specific body condition and habitat use information which constitutes our known information. We have also broadly identified our unknown information which we wish to estimate, [WHICH ARE???]. So the next step is to create our model, which is where we describe the relationship between our known and unknown data. 
 
-$$OBS \sim \text{Bernoulli}(S)$$
-which says that the probability of observing a bird alive on a given day follows a bernoulli distribution with a probability of *S*. If we believe that *S* will differ among individuals, we can add notation *i* as a subscript to denote differences in survival among individuals...
+From here we are going to take a slight detour to just provide some context for how exactly we find estimates from this model, If you do not care to read about statistical theory (and who could blame you), you can just skip to where we discuss how to write probability statements describing our model ([Writing Our Model Out]).  
 
-$$OBS_i \sim \text{Bernoulli}(S_i)$$
-Considering that our hypotheses specify such individual differences in survival associated with body condition and habitat, we will need a means to estimate variation in *S* by these covariates. This can be achieved using linear regression
+[Selecting a Prior Distribution] [Conjugate Priors - Hobbs and Hooten CH 5.3]
 
-$$
-S_i = \alpha + \boldsymbol{\beta X_i} + \epsilon 
-$$
-where $\alpha$ is an intercept term, $\boldsymbol{\beta X_i}$ is a series of beta coefficients and associated individual-specific covariate values, and $\epsilon$ represents unspecified variation in *S*. However, because *S* is a probability, it must be constrained between 0 and 1 which is not the case for the above equation. Instead, we can use the logit link function to ensure that *S* remains within realistic boundaries...
+#### Coding Our Model
+Walk through the assumptions of the model and show how to code it. 
 
-$$ 
-S_i = \frac{exp(\alpha + \boldsymbol{\beta X_i} + \epsilon)}{1 + exp(\alpha + \boldsymbol{\beta X_i} + \epsilon)}
-$$
-or written more simply...
+ADD A NON TIME VARYING COVARIATE TO DEMONSTRATE HOW THEY ARE CODED DIFFERENTLY
 
-$$
-\text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon
-$$
-So based on the model thus far, our unknown parameters include *S*, $\alpha, \beta, \textrm{ and }\epsilon$. We can estimate all of these with our proposed data, but we will also need to supply some prior values. Considering this is a hypothetical relationship, we will keep things simple and use uninformative priors. Uninformative priors for beta coefficients and error terms such as $\beta \textrm{ and }\epsilon$ can take many forms, but a simple option is a 0 centered normal distribution with a very wide standard deviation 
+we have an issue, survival is varying according to time-varying covariates, so the model need to reflect that. Coded differently than a non-time varying covariate.
 
-$$
-\beta \sim \text{Normal}(\mu = 0,\sigma = 10000)
-$$
-We will also wish to provide a starting value for $\alpha$, but this will be slightly more complicated. Remember that for a linear regression, $\alpha$ represents the expected value when all covariates are equal to 0. Therefore, $\alpha$ is the probabiltiy of survival when all covariates (*BC*, *FOR*, and *AG*) equal 0 and must be constrained to between 0 and 1. We can do this using a flat beta distribution and the logit link function
-
-$$
-\text{logit(}\alpha) = \text{Beta}(1,1)
-$$
-When we combine all of these statements together, we have a basic Bayesian model for survival
-
-$$
-OBS_i \sim \text{Bernoulli}(S_i)\\
-\text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon \\
-\text{logit(}\alpha) = \text{Beta}(1,1) \\
-\beta \sim \text{Normal}(\mu = 0,\sigma = 10000) \\
-\epsilon \sim \text{Normal}(\mu = 0,\sigma = 10000)
-$$
-
+[DISCUSS SUBSCRIPTS/INDEXING]
 
 ### Prepare the R Environment
-Now that we have a model, we will need to figure out how to translate it and any associated data we wish to supply to the model into a form that can be used. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
+Now that we have a model, we can see how well it works by simulating some data and running it in R. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
 
 ```{r, eval = F}
 install.packages("dplyr", "gtools", "R2jags", "RMark")
@@ -263,22 +235,6 @@ for(i in 1:n.turkey){
   }
 }
 ```
-### From Hypothesis to Model
-So lets check in. We have explicitly stated our research question and hypotheses which we wish to test. We have also collected data in the form of daily survival checks and individual-specific body condition and habitat use information which constitutes our known information. We have also broadly identified our unknown information which we wish to estimate, [WHICH ARE???]. So the next step is to create our model, which is where we describe the relationship between our known and unknown data. 
-
-From here we are going to take a slight detour to just provide some context for how exactly we find estimates from this model, If you do not care to read about statistical theory (and who could blame you), you can just skip to where we discuss how to write probability statements describing our model ([Writing Our Model Out]).  
-
-[Selecting a Prior Distribution] [Conjugate Priors - Hobbs and Hooten CH 5.3]
-
-#### Coding Our Model
-Walk through the assumptions of the model and show how to code it. 
-
-ADD A NON TIME VARYING COVARIATE TO DEMONSTRATE HOW THEY ARE CODED DIFFERENTLY
-
-we have an issue, survival is varying according to time-varying covariates, so the model need to reflect that. Coded differently than a non-time varying covariate.
-
-[DISCUSS SUBSCRIPTS/INDEXING]
-
 ### MCMC: Sampling from the Posterior
 [Bayesian Inference is just counting]
 
@@ -288,7 +244,7 @@ we have an issue, survival is varying according to time-varying covariates, so t
 
 [Potential Sampling Approaches]
 
-### Translating Model to Code: An Example in JAGS
+### Running the Model in JAGS
 #### MCMC Decisions
 There are quite a few options that need to be made when you run a MCMC. These will largely influence model convergence/run time.  [Broadly describe some decions.] The big issue many people run into when making these decisions which can slow them down is they are trying to find some correct answer, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions.  
 
@@ -502,7 +458,7 @@ Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model unti
 #### Evaluating and Presenting Results
 [Posterior Distribution]
 
-[An Aside About Logistic Regressions - More difficult to make inferences when near asymptotes]
+Aside: This seems like a relevant time to bring up an important note about interpretting results from logistic regression, specifically differentiating between **absolute** and **relative** effects. Relative effects refer to the logit link estimate of a beta coefficient and gives the **proportional change in odds** of an outcome.  Absolute effects refer to differences in the final probabilities being estimated and will depend on the entire regression formula. I will point readers to chapter 10 of *Statistical Rethinking* for a more in depth discussion and examples of these two. I bring it up now because we are dealing with effects acting on a event that already has ~99% chance of occurring (surviving a single day). When applying logisitic regression to events that happen with great regularity or extremely rarely, it is often best to evaluate both the relative and absolute differences in the outcome. This is because near these limits (0,1) there is less room for loss/growth and therefore a greater range of values can explain the observed differences in the rate of an outcome. 
 
 ### Alternative MCMC Samplers
 [What is different about NIMBLE] [Coding similarities/differences]
