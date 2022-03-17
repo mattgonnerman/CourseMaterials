@@ -90,7 +90,58 @@ Clearly stated hypotheses are an important step in producing transparent and unb
 
 Determining what constitutes relevant unknown information is a more complicated task as it requires familiarity with the statistical methods. This is because, depending on what we think is affecting survival and how we choose to measure it, there are many parameters and sources of variation that we could potentially include into our model. For example, if we were to conduct a mark-recapture study to determine survival, is there some observation process (i.e., variable detection rates) that must be incorporated to account for imperfect detections? Similarly, if we are going to use covariates such as body metrics and habitat to describe variation in survival, we will need to estimate parameters to describe those beta coefficients and the regression intercept. We can also try to account for many of the sources of noise in our system, such as incorporating random effects to describe unmeasured variation among individuals or groups of individuals. As you can tell, the number of parameters we need to estimate increases quickly as we add assumptions and additional data sources. Importantly, though we won't explicitly measure and incorporate every potential variable that influences survival, we can still account for them indirectly in the model through these different error sources, such as random effects. This list could be endless as you can make the model as complicated or simple as you desire, so an important step is differentiating what is relevant to your research question. This will likely be dependent on the question you are asking, your prior knowledge of the system, and the potential monitoring and management options. So to determine what all the unknowns of our proposed system are, let's jump into model construction.
 
-### Building Our Survival Model  
+### Building Our Survival Model
+We are next going to attempt to construct a daily survival rate model from scratch. There is no correct way to go about model construction, so I will offer up my approach as one option. First, let's identify all known information that we will be inputting into the model. For the purposes of learning, we will ignore the intricacies of coding a model and focus more on first constructing a theoretical model and then code it later. 
+
+First, we have our observed survival information in the form of daily live/dead statuses for each individual visited, which we will abbreviate as *Obs*. We also have the body condition of each bird, *BC*, and whether a turkey was in a suburban, forested (*FOR*), or agriculture (*AG*) dominated landscape. We next need to describe our observed data *Obs* according to the underlying process that determines individual survival outcomes. When we simplify this relationship, it becomes a weighted coin-toss with a binary outcome. Every day a turkey will either survive to the next day or die. For such "coin-toss" dynamics, it is common to use a Bernoulli distribution, which has a single parameter which we will abbreviae to *S*. We can right the relationship between *Obs* and *S* as
+
+$$Obs \sim \text{Bernoulli}(S)$$
+which says that the probability of observing a bird alive on a given day follows a bernoulli distribution with a probability of *S*. If we believe that *S* will differ among individuals, we can add notation *i* as a subscript to denote differences in survival among individuals...
+
+$$Obs_i \sim \text{Bernoulli}(S_i)$$
+
+Considering that our hypotheses specify such individual differences in survival associated with body condition and habitat, we will need a means to estimate variation in *S* by these covariates. This can be achieved using linear regression
+
+$$
+S_i = \alpha + \boldsymbol{\beta X_i} + \epsilon 
+$$
+
+where $\alpha$ is an intercept term, $\boldsymbol{\beta X_i}$ is a series of beta coefficients and associated individual-specific covariate values, and $\epsilon$ represents unspecified variation in *S*. However, because *S* is a probability, it must be constrained between 0 and 1 which is not the case for the above equation. Instead, we can use the logit link function to ensure that *S* remains within realistic boundaries...
+
+$$ 
+S_i = \frac{exp(\alpha + \boldsymbol{\beta X_i} + \epsilon)}{1 + exp(\alpha + \boldsymbol{\beta X_i} + \epsilon)}
+$$
+
+or written more simply...
+
+$$
+\text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon
+$$
+
+So based on the model thus far, our unknown parameters include *S*, $\alpha, \beta, \textrm{ and }\epsilon$. We can estimate all of these with our proposed data, but we will also need to supply some prior values. Considering this is a hypothetical relationship, we will keep things simple and use uninformative priors. Uninformative priors for beta coefficients and error terms such as $\beta \textrm{ and }\epsilon$ can take many forms, but a simple option is a 0 centered normal distribution with a very wide standard deviation 
+
+$$
+\beta \sim \text{Normal}(\mu = 0,\sigma = 10000)
+$$
+
+We will also wish to provide a starting value for $\alpha$, but this will be slightly more complicated. Remember that for a linear regression, $\alpha$ represents the expected value when all covariates are equal to 0. Therefore, $\alpha$ is the probabiltiy of survival when all covariates (*BC*, *FOR*, and *AG*) equal 0 and must be constrained to between 0 and 1. We can do this using a flat beta distribution and the logit link function
+
+$$
+\text{logit(}\alpha) = \text{Beta}(1,1)
+$$
+
+When we combine all of these statements together, we have a basic Bayesian model for survival
+
+$$
+Obs_i \sim \text{Bernoulli}(S_i)\\
+\text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon \\
+\text{logit(}\alpha) = \text{Beta}(1,1) \\
+\beta \sim \text{Normal}(\mu = 0,\sigma = 10000) \\
+\epsilon \sim \text{Normal}(\mu = 0,\sigma = 10000)
+$$
+
+
+### From Model to Code
 Up to this point, we have explicitly stated our research question and hypotheses which we wish to test. We have also translated those hypotheses into a statistical model which we need to translate further into code that can be read by R. This will explicitly define how our data is used within the model and therefore determine how it needs to be collected and formatted for the model to function appropriately. Considering we have walked through the model construction, I will present the final model in the appropriate JAGS coding 
 data in the form of daily survival checks and individual-specific body condition and habitat use information which constitutes our known information. We have also broadly identified our unknown information which we wish to estimate, [WHICH ARE???]. So the next step is to create our model, which is where we describe the relationship between our known and unknown data. 
 
@@ -107,8 +158,8 @@ we have an issue, survival is varying according to time-varying covariates, so t
 
 [DISCUSS SUBSCRIPTS/INDEXING]
 
-### Prepare the R Environment
-Now that we have a model, we can see how well it works by simulating some data and running it in R. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
+#### Prepare the R Environment
+Now that we have a model, we can test how well it approximates survival by simulating some data and running it in R. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
 
 ```{r, eval = F}
 install.packages("dplyr", "gtools", "R2jags", "RMark")
