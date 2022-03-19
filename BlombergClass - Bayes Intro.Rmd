@@ -68,7 +68,7 @@ In the same way that a prior can represent our knowledge of a parameter, it can 
 The joint distribution is the product of the likelihood and the prior distribution and is proportional to the posterior distribution. This means where the joint distribution is maximized, the posterior distribution will also be maximized.
 
 **Marginal Distribution** - $Pr(y)$  
-The marginal distribution defines the probability that the observed data would occur independent of other influences. Mathematically, the marginal distribution is equivalent to the integral of the joint distribution and is used to ensure that the posterior distribution integrate to 1. Put simply, dividing by the marginal distribution means that the posterior distribution will be a probabilistic statement. 
+The marginal distribution defines the probability that the observed data would occur, which is a rather abstract idea. Mathematically, the marginal distribution is equivalent to the integral of the joint distribution and is used to ensure that the posterior distribution integrate to 1. Put simply, dividing by the marginal distribution means that the posterior distribution will be a probabilistic statement. 
 
 Later we will discuss how Bayes theorem is applied to Markov Chain Monte Carlo simulations to sample from the joint distribution and estimate the posterior distribution, but first lets take a break from statistics and introduce a model system that we can use as our example.
 
@@ -123,8 +123,10 @@ So based on the model thus far, our unknown parameters include *S*, $\alpha, \be
 $$
 \beta \sim \text{Normal}(\mu = 0,\sigma = 10000)
 $$
+Aside: This is a good place to bring up some terms which you will see frequently that are worth differentiating here, parameters versus hyperparameters. A **parameter** defines the system process which we are attempting to estimate and a **hyperparameter** is a parameters of the prior distribution which define other parameters. Think of it as levels, if a parameter defines another parameter via some distribution, then it is a hyperparameter. And a hyperparameter itself can be drawn from a prior with its own hyperparameters. So in our example, $\beta$ would be considered a parameter and $\mu$ and $\sigma$ are hyperparameters.
 
 We will also wish to provide a starting value for $\alpha$, but this will be slightly more complicated. Remember that for a linear regression, $\alpha$ represents the expected value when all covariates are equal to 0. Therefore, $\alpha$ is the probabiltiy of survival when all covariates (*BC*, *FOR*, and *AG*) equal 0 and must be constrained to between 0 and 1. We can do this using a flat beta distribution and the logit link function
+
 
 $$
 \text{logit(}\alpha) = \text{Beta}(1,1)
@@ -135,28 +137,73 @@ When we combine all of these statements together, we have a basic Bayesian model
 $$
 Obs_i \sim \text{Bernoulli}(S_i)\\
 \text{logit}(S_i) = \alpha + \boldsymbol{\beta X_i} + \epsilon \\
-\text{logit(}\alpha) = \text{Beta}(1,1) \\
+\text{logit(}\alpha) \sim \text{Beta}(1,1) \\
 \beta \sim \text{Normal}(\mu = 0,\sigma = 10000) \\
 \epsilon \sim \text{Normal}(\mu = 0,\sigma = 10000)
 $$
 
 
 ### From Model to Code
-Up to this point, we have explicitly stated our research question and hypotheses which we wish to test. We have also translated those hypotheses into a statistical model which we need to translate further into code that can be read by R. This will explicitly define how our data is used within the model and therefore determine how it needs to be collected and formatted for the model to function appropriately. Considering we have walked through the model construction, I will present the final model in the appropriate JAGS coding 
-data in the form of daily survival checks and individual-specific body condition and habitat use information which constitutes our known information. We have also broadly identified our unknown information which we wish to estimate, [WHICH ARE???]. So the next step is to create our model, which is where we describe the relationship between our known and unknown data. 
+So now that we have a conceptual model, we need to translate the hypothesized relationship into code that a computer can interpret. Currently, you are most likely to encounter some version of the BUGS language, which is used in a variety of MCMC software including what we will use, JAGS. This language is especially useful for ecologists who may not be familiar with higher level maths, as it allows for the distillation of complex likelihood statements into simple probability distributions. For example, in our model specify a prior for our regression intercept using a beta distribution, but under the hood JAGS is actually dealing with [more intricate equations](https://en.wikipedia.org/wiki/Beta_distribution#Probability_density_function) when sampling from the posterior. There will be many intricacies involved with translating and coding your models, but our proposed survival model provides some excellent beginner modeling examples for the most common components of a BUGS model. 
 
-From here we are going to take a slight detour to just provide some context for how exactly we find estimates from this model, If you do not care to read about statistical theory (and who could blame you), you can just skip to where we discuss how to write probability statements describing our model ([Writing Our Model Out]).  
+#### Nodes
+In any model you make, estimated parameters are considered **nodes** within the model, which will often be referenced in any error messages you receive. For every model, nodes must be defined in one of three ways. **Stochastic** nodes are random parameters that are specified by a distribution within the model. Using our above model as an example, *Obs*, $\alpha$, $\beta$, and $\epsilon$ are all stochasitic as they rely on some prior distribution to define them. **Deterministic** nodes are logical functions of other nodes within the model, such as intermediary parameters such as *S*. Finally, **constants** are nodes which have been specified in a separate data file and provided to the model. These are often used as indexing variables which allow for outcomes to be linked with individual/time/location specific covariates (e.g., subscript *i* in the example model will become a constant). Regardless of which type, all nodes must defined by either a prior distribution, other parameters within the model, or by data supplied to the model. Failure to meet this criteria will result in an error message. 
 
-[Selecting a Prior Distribution] [Conjugate Priors - Hobbs and Hooten CH 5.3]
+#### Prior Distributions
+[Selecting a Prior Distribution] [Conjugate Priors - Hobbs and Hooten CH 5.3] 
 
-#### Coding Our Model
-Walk through the assumptions of the model and show how to code it. 
+Aside: [One of the most common distributions you will use, dnorm, is commonly specified by a mean and standard deviation  using precision instead of sd, common so important to note]
 
-ADD A NON TIME VARYING COVARIATE TO DEMONSTRATE HOW THEY ARE CODED DIFFERENTLY
+#### Indexing and Dynamic Indexing
+There will be occasions where you need to link parameters according to associated factors, such as coefficients within a regression model or when tracking outcomes according to unique individuals. In such cases, you can use indexing just like regular r code. For those unfamiliar, indexing is used in functions such as for loops to iteratively run calculation on a set of values. To apply this to our example, we hypothesized that each individual will experience unique survival rates according to habitat and body condition. To translate this into code for JAGS, we can use the below code to create a for-loop to estimate an individual specific daily survival rate.   
 
-we have an issue, survival is varying according to time-varying covariates, so the model need to reflect that. Coded differently than a non-time varying covariate.
+```{r, eval = F}
+  for(i in 1:n.ind){
+      logit(DSR[i]) <- a.S + b.bc*x.bc[i] + b.ag*x.ag[i] + b.for*x.for[i]
+    }
+```
+Now we have a new problem, we need to make sure each unique observation (i.e., each live/dead status) is linked to the correct survival rate for each turkey. This can be solved with a *dynamic index*, which is vector of constants which themselves are indexes referencing the correct node. 
 
-[DISCUSS SUBSCRIPTS/INDEXING]
+```{r}
+for(j in 1:n.obs){
+  obs.S[j] ~ dbern(DSR[turkey.id[j]])
+}
+```
+Here, "turkey.id" is a vector with length equal to the number of observations and each value within the vector references a specific turkey (otherwise *i* in the previous for loop). We use index *j* to call a specific turkey ID within the dynamic index, which then calls a specific daily survival rate to use as a probability within the bernoulli trial.
+
+#### Non-Uniform Data
+[JAGS does not like missing values] [Unforunately I have never seen a perfect data set, which means we have to code our model to account for any gaps in visits or missing data.] [This can be done any number of ways, but the big takeaway is that NAs in your datasets will always cause issues so need to premept potential issues or be able to adjust code to handle it]. [For our example, it is probably unrealistic to assume you will find all birds on all days.] [Maybe a technician was sick for a day or a specific turkey moved an unexpectedly large distance and could not be found.] [Thus we need to structure our data to account for these missing days.]   
+
+```{r, eval = F}
+for(j in 1:n.obs){
+    period.S[j] <- pow(DSR[turkey.id[j]], interval[j]) # Total probability of survival since previous visit
+    obs.S[j] ~ dbern(period.S[j]) # Observation process follows bernoulli distribution
+  }
+```
+
+If we combine everything we have above to translate our theroretical model into a BUGS model, you get the below result. Notice that it is wrapped inside of a function, which is purely a functional aspect of the R2JAGS package we are using. 
+```{r}
+JAGS.turkey.S.model <- function(){
+  ###Priors
+  base.S ~ dbeta(1,1) 
+  a.S <- logit(base.S) 
+  b.bc ~ dnorm(0, 1/100) 
+  b.ag ~ dnorm(0, 1/100)
+  b.for ~ dnorm(0, 1/100)
+  
+  
+  ###LIKELIHOOD
+  for(i in 1:n.ind){
+      logit(DSR[i]) <- a.S + b.bc*x.bc[i] + b.ag*x.ag[i] + b.for*x.for[i]
+    }
+  
+  for(j in 1:n.obs){
+    period.S[j] <- pow(DSR[turkey.id[j]], interval[j]) # Total probability of survival since previous visit
+    obs.S[j] ~ dbern(period.S[j]) # Observation process follows bernoulli distribution
+  }
+}
+```
+
 
 #### Prepare the R Environment
 Now that we have a model, we can test how well it approximates survival by simulating some data and running it in R. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
@@ -313,43 +360,8 @@ There are quite a few options that need to be made when you run a MCMC. These wi
 
 [Parallel Processing]
 
-#### A JAGS Example
-Translate our model into JAGS code
 
-[Write model first, then worry about getting the data formatted correctly - Obviously make sure you aren't writing a model that can't use the data you have]
-
-[Time varying covariate will require some cleverness]
-
-#### Dynamic Indexing
-https://mmeredith.net/blog/2021/JAGS_to_NIMBLE.htm
-
-```{r}
-JAGS.turkey.S.model <- function(){
-  ###Priors
-  base.S ~ dbeta(1,1) 
-  a.S <- logit(base.S) 
-  b.bc ~ dnorm(0, 1/100) 
-  b.ag ~ dnorm(0, 1/100)
-  b.for ~ dnorm(0, 1/100)
-  
-  
-  ###LIKELIHOOD
-  for(i in 1:n.ind){
-      logit(DSR[i]) <- a.S + b.bc*x.bc[i] + b.ag*x.ag[i] + b.for*x.for[i]
-    }
-  
-  for(j in 1:n.obs){
-    period.S[j] <- pow(DSR[turkey.id[j]], interval[j]) # Total probability of survival since previous visit
-    obs.S[j] ~ dbern(period.S[j]) # Observation process follows bernoulli distribution
-  }
-}
-```
-[dnorm using precision instead of sd, common so important to note]
-
-[Indexing to make these work is one of the more difficult things for me.]
-
-[If something is in the equation (= or ~ or <-), then it either needs a prior (b.snow ~ dnorm(0, 1/1000)), be reference to supplied information (obs.S), or be described by estimated or supplied parameters (period.S[i,j] <- prod(DSR[i, missed.days[i,j]])) ]
-
+#### Data Packaging
 Reformatting data to get what we want.
 
 ```{r}
