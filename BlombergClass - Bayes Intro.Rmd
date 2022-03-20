@@ -144,15 +144,15 @@ $$
 
 
 ### From Model to Code
-So now that we have a conceptual model, we need to translate the hypothesized relationship into code that a computer can interpret. Currently, you are most likely to encounter some version of the BUGS language, which is used in a variety of MCMC software including what we will use, JAGS. This language is especially useful for ecologists who may not be familiar with higher level maths, as it allows for the distillation of complex likelihood statements into simple probability distributions. For example, in our model specify a prior for our regression intercept using a beta distribution, but under the hood JAGS is actually dealing with [more intricate equations](https://en.wikipedia.org/wiki/Beta_distribution#Probability_density_function) when sampling from the posterior. There will be many intricacies involved with translating and coding your models, but our proposed survival model provides some excellent beginner modeling examples for the most common components of a BUGS model. 
+So now that we have a conceptual model, we need to translate the hypothesized s into code that a computer can interpret. Currently, you are most likely to encounter some version of the BUGS language, which is used in a variety of MCMC software including what we will use, JAGS. This language is especially useful for ecologists who may not be familiar with higher level maths, as it allows for the distillation of complex likelihood statements into a list of simple probability distributions. For example, in our model we specify a prior for our regression intercept using an uninformative beta distribution, simply written as ~Beta(1,1), but under the hood JAGS is actually dealing with [more intricate equations](https://en.wikipedia.org/wiki/Beta_distribution#Probability_density_function) when sampling from the posterior. 
+
+There will be many intricacies involved with translating and coding your models, but our proposed survival model provides some excellent beginner modeling examples for common components of a BUGS model. 
 
 #### Nodes
 In any model you make, estimated parameters are considered **nodes** within the model, which will often be referenced in any error messages you receive. For every model, nodes must be defined in one of three ways. **Stochastic** nodes are random parameters that are specified by a distribution within the model. Using our above model as an example, *Obs*, $\alpha$, $\beta$, and $\epsilon$ are all stochasitic as they rely on some prior distribution to define them. **Deterministic** nodes are logical functions of other nodes within the model, such as intermediary parameters such as *S*. Finally, **constants** are nodes which have been specified in a separate data file and provided to the model. These are often used as indexing variables which allow for outcomes to be linked with individual/time/location specific covariates (e.g., subscript *i* in the example model will become a constant). Regardless of which type, all nodes must defined by either a prior distribution, other parameters within the model, or by data supplied to the model. Failure to meet this criteria will result in an error message. 
 
-#### Prior Distributions
-[Selecting a Prior Distribution] [Conjugate Priors - Hobbs and Hooten CH 5.3] 
-
-Aside: [One of the most common distributions you will use, dnorm, is commonly specified by a mean and standard deviation  using precision instead of sd, common so important to note]
+#### Uninformative Normal Prior Distributions
+There are many intricacies to selecting and specifying prior distributions which will be context specific and are more complicated than we have the space to discuss. However, the normal distribution, which is specified as dnorm(), is common enough to mention it here. As many of you know, a normal distribution is usually specified by a mean ($\mu$) and standard deviation ($\sigma$). In JAGS however, we use a slightly different specification where instead of standard deviation, dnorm() uses precision ($\tau$) which is just $1/\sigma$. The reasons for this involve the importance of *conjugate priors* in early computing of Bayesian models. You will see this concept discussed if you explore further down Bayesian modeling, but it is not worth going into here. If you wish to read more, try Hobbs and Hooten chapter 5.3 for more on conjugate priors. For now, just remember that whenever you use a normal distribution, you will need to use precision and not standard deviation.
 
 #### Indexing and Dynamic Indexing
 There will be occasions where you need to link parameters according to associated factors, such as coefficients within a regression model or when tracking outcomes according to unique individuals. In such cases, you can use indexing just like regular r code. For those unfamiliar, indexing is used in functions such as for loops to iteratively run calculation on a set of values. To apply this to our example, we hypothesized that each individual will experience unique survival rates according to habitat and body condition. To translate this into code for JAGS, we can use the below code to create a for-loop to estimate an individual specific daily survival rate.   
@@ -164,15 +164,15 @@ There will be occasions where you need to link parameters according to associate
 ```
 Now we have a new problem, we need to make sure each unique observation (i.e., each live/dead status) is linked to the correct survival rate for each turkey. This can be solved with a *dynamic index*, which is vector of constants which themselves are indexes referencing the correct node. 
 
-```{r}
+```{r, eval = F}
 for(j in 1:n.obs){
   obs.S[j] ~ dbern(DSR[turkey.id[j]])
 }
 ```
-Here, "turkey.id" is a vector with length equal to the number of observations and each value within the vector references a specific turkey (otherwise *i* in the previous for loop). We use index *j* to call a specific turkey ID within the dynamic index, which then calls a specific daily survival rate to use as a probability within the bernoulli trial.
+Here, "turkey.id" is a vector with length equal to the number of observations and each value within the vector references a specific turkey (otherwise *i* in the previous for loop). We use index *j* to call a specific turkey ID within the dynamic index, which then calls a specific daily survival rate to use as a probability within the Bernoulli trial.
 
 #### Non-Uniform Data
-[JAGS does not like missing values] [Unforunately I have never seen a perfect data set, which means we have to code our model to account for any gaps in visits or missing data.] [This can be done any number of ways, but the big takeaway is that NAs in your datasets will always cause issues so need to premept potential issues or be able to adjust code to handle it]. [For our example, it is probably unrealistic to assume you will find all birds on all days.] [Maybe a technician was sick for a day or a specific turkey moved an unexpectedly large distance and could not be found.] [Thus we need to structure our data to account for these missing days.]   
+One of the most important rules in running Bayesian models is that **Missing values (NAs) in supplied data will always cause issues**. Unfortunately, I have never seen a perfect data set and I doubt one exists, which means we have to account for any gaps in visits or missing data. For our example, it is probably unrealistic to assume you will find all birds on all days. Maybe a technician was sick for a day or a specific turkey moved an unexpectedly large distance and could not be found. We can and will adjust our data preparation to account for these gaps in data, but we may also need deal with missing data within our models explicitly. One option (which we will not perform but is worth mentioning) would be to treat missing data as a random variable within the model which needs to be estimated and accounted for. Alternatively, and what we will do, is to incorporate the missed checks into the how we estimate survival. Specifically, we can estimate the probability of surviving any given number of days between successful status check as being equal to the daily survival rate exponentiated by the number of days. In JAGS, we can accomplish this using the pow() function   
 
 ```{r, eval = F}
 for(j in 1:n.obs){
@@ -181,7 +181,8 @@ for(j in 1:n.obs){
   }
 ```
 
-If we combine everything we have above to translate our theroretical model into a BUGS model, you get the below result. Notice that it is wrapped inside of a function, which is purely a functional aspect of the R2JAGS package we are using. 
+If we combine everything we have done above together, we translate our theoretical model into a BUGS model which you can read in full below. Notice that it is wrapped inside of a function, which is purely a functional aspect of the R2JAGS package we are using. 
+
 ```{r}
 JAGS.turkey.S.model <- function(){
   ###Priors
@@ -230,7 +231,7 @@ source("5 - CreateFigures.R")
 
 ### Simulating our Model System
 #### Simulate individual turkey characteristics and associated weather information
-Now that we have laid out our research question and hypotheses, let's simulate some data. Simulated data will be  useful for learning these concepts but it also provides a level of control that facilitates model construction. Specifically, by generating data on which our model can be constructed, we will know whether our model outputs are accurate to the real values, which we can specify to be any value we wish. It also allows us to introduce noise into data collection, which will allow us to assess how the model reacts to random variation in the observation process. If we were to start with real data, we would have much less capacity to determine whether the values we were getting were accurate.
+Simulated data is useful for demonstrating the relationship that we wish to model but it also provides a level of control that facilitates model construction. Specifically, by generating data on which our model can be constructed, we will know whether our model outputs are accurate to the real values, which we can specify to be any value we wish. It also allows us to introduce noise into data collection, which will allow us to assess how the model reacts to random variation in the observation process. If we were to start with real data, we would have much less capacity to determine whether the values we were getting were accurate.
 
 We are going to start by setting values for the parameters that we will ultimately estimate and compare our model results to. 
 ```{r}
