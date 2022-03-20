@@ -21,10 +21,9 @@ lapply(c("dplyr",
 [Describing Our Model System]  
 [Building Our Survival Model]  
 [From Model to Code]  
-[Simulating our Model System]   
-[From Hypothesis to Model]  
+[Simulating Our Model System] 
 [MCMC: Sampling from the Posterior]  
-[Running the Model in JAGS]
+[Running the Model in JAGS]  
 [Alternative MCMC Samplers]  
 [Comparing Bayesian and Frequentist Approaches]  
 [Sources and Other Resources]  
@@ -231,7 +230,7 @@ source("4 - SummarizeOutput.R")
 source("5 - CreateFigures.R")
 ```
 
-### Simulating our Model System
+### Simulating Our Model System
 #### Simulate individual turkey characteristics and associated weather information
 We will use simulated data to test the ability of our modelt to accurately predict survival. This will be useful for demonstrating the concepts we have discussed to this point, but using simulated data also provides a level of control that facilitates model construction. Specifically, by generating data on which our model can be constructed, we will know whether our model outputs are accurate to the real values, which we can specify to be any value we wish. It also allows us to introduce noise into data collection, which will allow us to assess how the model reacts to random variation in data collection. If we were to start with real data, we would have much less capacity to determine whether the values we were producing were accurate.
 
@@ -345,7 +344,7 @@ for(i in 1:n.turkey){
 ### MCMC: Sampling from the Posterior
 #### Markvoc Chain Monte Carlo Simulations
 
-At this point we have our model and we have simulated data, so we can finally learn how to actually run our model. While there are many bayesian options for running models, by far the most common is Markov Chain Monte Carlo simulations. [Bayesian Inference is just counting]
+At this point we have our model and we have simulated data, so we can finally learn how to actually run our model. While there are many Bayesian options for running models, by far the most common is Markov Chain Monte Carlo simulations. [Bayesian Inference is just counting]
 
 [Simulated draws from the posterior]
 
@@ -371,7 +370,7 @@ There are quite a few options that need to be made when you run a MCMC. These wi
 
 
 #### Data Packaging
-Reformatting data to get what we want.
+There is not a singluar [Lists] [Vectors] [Matrices] [Arrays]
 
 ```{r}
 ### Format data to make compatible with model specification
@@ -530,7 +529,7 @@ Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model unti
 #### Evaluating and Presenting Results
 [Posterior Distribution]
 
-Aside: This seems like a relevant time to bring up an important note about interpretting results from logistic regression, specifically differentiating between **absolute** and **relative** effects. Relative effects refer to the logit link estimate of a beta coefficient and gives the **proportional change in odds** of an outcome.  Absolute effects refer to differences in the final probabilities being estimated and will depend on the entire regression formula. I will point readers to chapter 10 of *Statistical Rethinking* for a more in depth discussion and examples of these two. I bring it up now because we are dealing with effects acting on a event that already has ~99% chance of occurring (surviving a single day). When applying logisitic regression to events that happen with great regularity or extremely rarely, it is often best to evaluate both the relative and absolute differences in the outcome. This is because near these limits (0,1) there is less room for loss/growth and therefore a greater range of values can explain the observed differences in the rate of an outcome. 
+Aside: This seems like a relevant time to bring up an important note about interpreting results from logistic regressions, specifically differentiating between **absolute** and **relative** effects. Relative effects refer to the logit link estimate of a beta coefficient and gives the **proportional change in odds** of an outcome.  Absolute effects refer to differences in the final probabilities being estimated and will depend on the entire regression formula. I will point readers to chapter 10 of *Statistical Rethinking* for a more in depth discussion and examples of these two. I bring it up now because we are dealing with effects acting on a event that already has ~99% chance of occurring (surviving a single day). When applying logisitic regression to events that happen with great regularity or extremely rarely, it is often best to evaluate both the relative and absolute differences in the outcome. This is because near these limits (0,1) there is less room for loss/growth and therefore a greater range of values can explain the observed differences in the rate of an outcome. 
 
 ### Alternative MCMC Samplers
 [What is different about NIMBLE] [Coding similarities/differences]
@@ -542,13 +541,13 @@ Aside: This seems like a relevant time to bring up an important note about inter
 
 
 ### Comparing Bayesian and Frequentist Approaches
-So you may be thinking, "if its so easy to do this using a frequentist framework, why in the world did you make me do this long exercise?!."  
+So you may be thinking, "if its so easy to do this using a Frequentist framework, why in the world did you make me do this long exercise?!."  
 
 #### Similar Results
 [Given the same or similar models, you will often times reach the same conclusion whether you are using Bayesian or Frequentist approaches.]
 
 #### Ease of Use
-The simple fact is, in most cases the frequentist approach to analysing a model will be simpler and easier than a Bayesian equivalent. That is, until you begin to introduce complexity into your model or need to perform 
+The simple fact is, in most cases the Frequentist approach to analysing a model will be simpler and easier than a Bayesian equivalent. That is, until you begin to introduce complexity into your model or need to perform 
 
 #### Computational Limitations
 [Bayesian Simulations Take a lot of time] [Alternative samplers] [Nimble] [Alternative approximation methods]
@@ -565,7 +564,7 @@ The simple fact is, in most cases the frequentist approach to analysing a model 
 #### Direct Comparison of RMark and R2JAGS results
 [Translate simulated data into RMark format]
 
-```{r, error = F, warning = F}
+```{r, error = F, warning = F, message = F, results = "hide"}
 rmark.turk.hist <- as.data.frame(obs.hist.mat) %>%
   mutate(FirstFound = 1) %>% 
   rowwise() %>%
@@ -593,9 +592,28 @@ RMark.model <- mark(WintSurv.process,
                     WintSurv.ddl, 
                     model.parameters=list(S=list(formula =~ BC + AG + FOR, 
                                                  link="logit")))
-
-summary(RMark.model)
 ```
+
+As a reminder, we initially set as the true values for these parameters as...
+
+```{r, echo = F}
+data.frame(MeanDSR = 0.99,  #base daily survival rate
+           Intercept = logit(mean.DSR), #Use logit link to create an intercept
+           BC = .003, #Body Condition
+           AG = .5, #Agriculture
+           FOR = -1 #Forested
+           )
+```
+And here are the results we found from MCMC simulations
+```{r, echo = F}
+summary(Surv_JAGS_MCMC)
+```
+
+And finally we can take a look at our results from MARK. 
+```{r}
+summary(RMark.model)$beta
+```
+If everything went as it should, then the true parameter values should fall within the confidence intervals for each estimate. There will be some discrepancies between the values because of inherent randomness in our simulation process. Remember, we used random draws from distributions to determine individual outcomes and we also included individual specific differences as represented by $\epsilon$. You should also notice that the estimates from MCMC and MARK are very similar but not exactly the same. Since this is a very basic model, and the only real difference between the models is the inclusion of non-informative priors, we would not expect estimates from a Frequentist or Bayesian approach to differ dramatically. However, as you add complexity, maybe through the inclusion of random effects or integrating additional models to estimate more parameters, then the Frequentist approach will become increasingly less viable an option. Similarly, as data availability decreases, the importance of the regularizing effects of prior distributions also become increasingly important for producing realistic estimates. You can see this yourself by reducing the number of turkeys sampled or the number of days to see how estimates change. 
 
 
 ### Sources and Other Resources
@@ -609,12 +627,12 @@ summary(RMark.model)
   Kery and Schaub - Bayesian Population Analysis using WinBUGS: A Hierarchical Perspective
 </div>
   
-I have also found the below resources useful in familiarizing myself with and better understanding bayesian concepts and applications.  
+I have also found the below resources useful in familiarizing myself with and better understanding Bayesian concepts and applications.  
   <div style="margin-left: 1em;">  
   [Olivier Giminez's Youtube Channel](https://www.youtube.com/c/OlivierGimenez)  
   [Richard McElreath's Youtube Channel](https://www.youtube.com/channel/UCNJK6_DZvcMqNSzQdEkzvzA/about)  
   [ritvikmath Youtube Channel](https://www.youtube.com/c/ritvikmath)  
-  [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/frequentist-vs-bayesian-statistics-resources-to-help-you-choose/)  
-  [McGill 2013 - Why saying you are a bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-bayesian-is-a-low-information-statement/)  
+  [Fox 2011 - Frequentist vs. Bayesian statistics: resources to help you choose](https://dynamicecology.wordpress.com/2011/10/11/Frequentist-vs-Bayesian-statistics-resources-to-help-you-choose/)  
+  [McGill 2013 - Why saying you are a Bayesian is a low information statement](https://dynamicecology.wordpress.com/2013/06/19/why-saying-you-are-a-Bayesian-is-a-low-information-statement/)  
   [rasmusab Youtube Channel](https://www.youtube.com/channel/UCO7kJ__JJ4v4RQU3ZymR3Kw)
   </div>
