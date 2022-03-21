@@ -512,7 +512,7 @@ traceplot(Surv_JAGS_output, #bugs output object
           varname = c("a.S", "b.ag", "b.for", "b.bc")) #Which parameters to plot
 ```
 
-More in depth options for model diagnostics exist, but I will only present a few below for you to explore yourself. 
+More in depth options for model diagnostics exist, but I will only present a few below for you to [explore yourself](https://go.documentation.sas.com/doc/en/pgmsascdc/9.4_3.3/statug/statug_introbayes_sect025.htm). 
 
 ```{r, eval = F}
 require(coda)
@@ -532,28 +532,20 @@ Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model unti
 
 
 ### Comparing Bayesian and Frequentist Approaches
-So you may be thinking, "if its so easy to do this using a Frequentist framework, why in the world did you make me do this long exercise?!."  
+There is much to debate about the efficacy of Bayesian approaches over Frequentist, so lets just break down the most glaring similarities and differences between the two to see why we would choose one over the other.  
 
-#### Similar Results
-[Given the same or similar models, you will often times reach the same conclusion whether you are using Bayesian or Frequentist approaches.]
+**Ease of Use** - The simple fact is, in most cases the Frequentist approach to analysing a model will be simpler and easier than a Bayesian equivalent. For simple models, it is unlikely that you will need to worry much about unique specifications or unsupported additions, in which case the pre-prepared functions provided by a package will likely get you to where you need to go. But once you begin to introduce complexity into your model or need to perform novel analysis, you will begin to be more limited by the packages available to use. This is where a Bayesian approach will become more enticing. Yes, you will need to put in some effort into generating a model and running the MCMC, but you already have the tools available to perform such analysis. Should you go down the route of customized frequentist analyses, you may find yourself limited by your coding or mathematical skills.  
 
-#### Ease of Use
-The simple fact is, in most cases the Frequentist approach to analysing a model will be simpler and easier than a Bayesian equivalent. That is, until you begin to introduce complexity into your model or need to perform 
+**Computational Limitations** - Bayesian simulations also tend to require greater computational power to run and store all of the simulations that you are running. This means more total time your computer needs to be running as well as a need for greater storage space. You can get around some of these limitations by using more advanced samplers or adjusting MCMC specifications, but it will likely still exceed the requirements of a Frequentist approach.  
 
-#### Computational Limitations
-[Bayesian Simulations Take a lot of time] [Alternative samplers] [Nimble] [Alternative approximation methods]
+**Interpretation of Uncertainty** - One argument for a Bayesian approach is a more intuitive interpretation of model uncertainty. In a Frequentist approach, "all probabilities are defined by their connection to countable events and their frequency in very large samples" (McElreath - Statistical Rethinking). This leads to a rather obtuse interpretation where uncertainty is premised on theoretical re-samples of the data which never occur. In contrast, a Bayesian approach returns a posterior distribution which can be used to make probabilistic statements about our estimates and their uncertainty.  
 
-#### Interpretation of Results
-[Intuitive representation of uncertainty] [Hypothetical Replicates vs Probability Statements]
-
-#### Propogation of Uncertainty
-[Much easier to account for uncertainty in model parameters used to predict other parameters.]
-
-#### Integrating Models
-[Every Posterior can be a prior]
+**Integrating Models/Propogation of Uncertainty** - The flexibility of a Bayesian approach lends itself to customization and complexity, which is especially useful when linking multiple models together. In ecology, we frequently deal with related models that share parameters which we wish to estimate. When models share the same or similar parameters, we may wish to integrate the models to share information among them and improve inference overall. While this is possible to do in a Frequentist setting, it is much easier to do within a single Bayesian model largely because parameter estimates are represented  probability distributions which can be used as priors for other parameters. This is just one way in which model estimates can be linked and uncertainty can be translated directly between models.
 
 #### Direct Comparison of RMark and R2JAGS results
-[Translate simulated data into RMark format]
+Despite their differences, given the same or similar models, Bayesian and Frequentist approaches will usually lead to the same conclusion. This is because many of the differences lie in interpretation and implementation, not on the formulas defining the relationships. To demonstrate this, let's quickly run the exact same data we simulated for JAGS through RMark to see how results change. 
+
+First we will need to reformat our data once again, this time making sure it is suitable for use in MARK. For details on what that encounter history should look like, you can check out [chapter 17 of the MARK manual](http://www.phidot.org/software/mark/docs/book/pdf/chap17.pdf).
 
 ```{r, error = F, warning = F, message = F, results = "hide"}
 rmark.turk.hist <- as.data.frame(obs.hist.mat) %>%
@@ -595,15 +587,19 @@ data.frame(MeanDSR = 0.99,  #base daily survival rate
            FOR = -1 #Forested
            )
 ```
+
 And here are the results we found from MCMC simulations
+
 ```{r, echo = F}
 summary(Surv_JAGS_MCMC)
 ```
 
 And finally we can take a look at our results from MARK. 
+
 ```{r}
 summary(RMark.model)$beta
 ```
+
 If everything went as it should, then the true parameter values should fall within the confidence intervals for each estimate. There will be some discrepancies between the values because of inherent randomness in our simulation process. Remember, we used random draws from distributions to determine individual outcomes and we also included individual specific differences as represented by $\epsilon$. You should also notice that the estimates from MCMC and MARK are very similar but not exactly the same. Since this is a very basic model, and the only real difference between the models is the inclusion of non-informative priors, we would not expect estimates from a Frequentist or Bayesian approach to differ dramatically. However, as you add complexity, maybe through the inclusion of random effects or integrating additional models to estimate more parameters, then the Frequentist approach will become increasingly less viable an option. Similarly, as data availability decreases, the importance of the regularizing effects of prior distributions also become increasingly important for producing realistic estimates. You can see this yourself by reducing the number of turkeys sampled or the number of days to see how estimates change. 
 
 
