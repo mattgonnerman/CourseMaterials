@@ -4,8 +4,9 @@ subtitle: "Wild Turkey Survival in JAGS"
 author: "Matthew Gonnerman"
 output: html_document
 ---
-
 ```{r, setup, include=FALSE}
+#https://mattgonnerman.github.io/CourseMaterials/BlombergClass---Bayes-Intro.html website link
+
 lapply(c("dplyr",
          # "ggplot2", 
          "R2jags",
@@ -21,10 +22,9 @@ lapply(c("dplyr",
 [Describing Our Model System]  
 [Building Our Survival Model]  
 [From Model to Code]  
-[Simulating Our Model System] 
-[MCMC: Sampling from the Posterior]  
-[Running the Model in JAGS]  
-[Alternative MCMC Samplers]  
+[Simulating Our Model System]
+[Running the Model in JAGS: Sampling from the Posterior] 
+[Model Diagnostics and Reporting Results]
 [Comparing Bayesian and Frequentist Approaches]  
 [Sources and Other Resources]  
 
@@ -341,36 +341,54 @@ for(i in 1:n.turkey){
 }
 ```
 
-### MCMC: Sampling from the Posterior
-#### Markvoc Chain Monte Carlo Simulations
+### Running the Model in JAGS: Sampling from the Posterior
+#### Markov Chain Monte Carlo Simulations
+Once you have your model coded and data collected, you are finally able to evaluate your model. In a Bayesian framework you will have many options for doing this, but by far the most common is **Markov Chain Monte Carlo** simulations. In this method, we simulate samples from the posterior using the joint distribution, which is the product of the likelihood and the prior. How we sample from this distribution will depend on which *sampler* we are using, which is the algorithm defining potential jumps between parameters values. In the case of JAGS we use the *Gibbs sampler* (hence the name, Just Another Gibbs Sampler), but much effort and research is put into developing and refining new samplers to more efficiently simulate MCMC draws of the posterior from a candidate model. Unforunately, JAGS has limited options on which samplers you have available but for our purposes that will be fine. If you begin to explore more complex modelling techniques, you will likely venture into additional MCMC software such as Stan or Nimble, which allow for the use and development of more complex samplers
 
-At this point we have our model and we have simulated data, so we can finally learn how to actually run our model. While there are many Bayesian options for running models, by far the most common is Markov Chain Monte Carlo simulations. [Bayesian Inference is just counting]
+The steps of a MCMC simulation using a Gibbs sampler follow a general order of operations.
 
-[Simulated draws from the posterior]
+1. An initial starting value along the posterior is chosen, either randomly or by the user.
+2. A second random value along the posterior is chosen (the exact decision method will depend on the sampler).
+3. Compare the probability of both values being the true value, according to the joint distribution.
+4. If the new value has a higher probability of being the true value than the original value, then the sampler moves to the new value.
+5. If the original value has a higher probability of being true, then some criteria according to the sampler is used to randomly select one of the two options for the next simulation.
+6. Repeat as many times as specified. If more than one parameter is being estimated, each is sampled and assessed individually so that only one parameter value changes for each simulation.
 
-[Samplers] [JAGS Sampling Approaches]
+The final result will be a list of values for each parameter from which we can construct a posterior distribution to describe each parameter. 
 
-### Running the Model in JAGS
-#### MCMC Decisions
-There are quite a few options that need to be made when you run a MCMC. These will largely influence model convergence/run time.  [Broadly describe some decions.] The big issue many people run into when making these decisions which can slow them down is they are trying to find some correct answer, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions.  
+#### MCMC Decisions - Considerations for Running Time
+There are quite a few decisions that you will make when you perform MCMC simulations, such as starting values for the sampler, how many samples to collect, or which sampler to use. These will largely influence model convergence/run time, i.e., how long it takes your model to reach a stable equilibrium around each parameter estimate. At the beginning of MCMC simulations, there is a period where the sampler is searching across the posterior to find its maxima. Once it reaches this point, the sampler should **converge** on a value, i.e., the sampler will remain centered on a value which is otherwise called a **stable equilibrium**. The goal of any MCMC approach is to reach a stable equilibrium for all paramateres as efficiently and quickly as possible.
 
-**Starting Values** - [Where you tell the MCMC to begin sampling for a given parameter value can affect run time] [For a correctly specified model, this shouldn't affect results]  
+An issue many people encounter when they first perform MCMC simulations is overagonizing on the initial settings of the MCMC, when in many cases these decisions are subject to the circumstances of the model, data, and researcher. So lets walk through some of these major questions and starting setting you must decide on. These decisions will be largely consistent across software options, although the exact implementation may differ.
 
-[In certain instances, if you let the model choose its own starting values, it can results in impossible relationships, which will cause errors when you try to run the model. For example, if you accidentally supply a negative value to a distribution constrained above 0. By specifying a starting value, you allow the model to start in a realistic location]
+**Number of parameters to estimate** - As you would expect, the greater the number of parameters you wish to estiamte, the greater the number of simulations required to produce posterior estiamtes for each.
 
-[Also important to note, these programs hate NA values. So this may be another place where you need to supply starting information so there are no NA values]
+**Initial Values** - While you can allow the sampler to select a starting location for simulations, you can also specify a realistic starting point as well. For a correctly specified model, this should not affect results, but starting the simulations closer to the posterior maximum can aid in convergence and speed up run times. 
 
-**Burn-in Time** -  
+In certain instances, if you let the model choose its own starting values, it can results in impossible relationships, which will cause errors when you try to run the model. For example, if the sampler supplies a negative value to a distribution constrained above 0, then an error will be returned. By specifying a starting value, you can ensure that the sampler begins in a realistic point along the posterior and avoid such errors. 
 
-**Sampling Method** -  
+**Iterations** - This is the total number of iterations (samples) per each parameter chain that the MCMC performs. The longer the chain, the larger the sample size and the more time a parameter estimate has to converge.
 
-**Coding Language** - There are many ways that you can code and run an MCMC. We will focus on two coding frameworks that are currently most widely used among ecologists **JAGS** and **NIMBLE**. [BUGS language]. [Similarities]. [Differences]. [When to choose one of the other].  
+**Burn-in Time** - As mentioned above, whether you supply initial values or not, there will be a number of samples collected before the sampler reaches a stable equilibrium. During this time the model has not converged and the values produced should not be considered as part of the posterior distribution. The burn-in period specifies how many of these samples to discard before we begin treating them as part of the posterior. The concern here is that you do not want to use a value so large as to remove viable samples but also it needs to be large enough to allow for convergence. 
 
-[Parallel Processing]
+**Thinning** - An important aspect of MCMC sampling is that there is no autocorrelation in the samples. Should autocorrelation arise, you can thin the chain to keep every Xth value. There is some debate as to the utility of this method, with some arguing that it increases model run time without necessarily improving inference. If you are looking to efficiently sample the posterior and have little concern for autocorrelation, then a lower thinning value or no thinning at all is advised.
+
+**Sampling Method** - I have already mentioned that different samplers can be used depending on the software and skills at your disposal. Should you venture into more complicated modeling techniques, I would recommend exploring additionally coding options (such as Nimble) to make use of such improved MCMC samplers. Luckily, the language used for coding models across these software is largely very similar, although some care should be taken when first starting to identify important differences. 
+
+**Number of Chains/Parallel Processing** - You also have the option to split your simulations up across multiple chains, which can be considered one set of simulated parameter estimates. Should you have access to a multi-core processor on your computer, your may take advantage of multiple chains and parallel processing to decrease model run time. We will not cover how to do this in this lesson, but for JAGS the process is [relatively simple](https://cran.r-project.org/web/packages/R2jags/R2jags.pdf)  
+
+So with all of that in mind, I have chosen some starting values for the number of iterations, the total burn-in, the thinning rate, and the number of chains. Feel free to adjust these values to see how it affects run time.
+```{r}
+#Make final MCMC related decisions
+ni <- 2000 #Iterations
+nb <- 1000 #Burn-In
+nt <- 1 #Thinning
+nc <- 3 #Chains
+```
 
 
-#### Data Packaging
-There is not a singluar [Lists] [Vectors] [Matrices] [Arrays]
+#### Data Formatting
+Before we can send everything to the sampler, we will need to repackage our data in such a way that JAGS and our model can interpret. As far as JAGS is concerned, there are only a few general rules that you will need to worry about. First, whatever form a node is within the model, if it corresponds to supplied data or initial values, then they must be in a similar format. To use our model as an example, observations of live/dead status are specified as a vector, therefore we must reformat the original matrix into an ordered vector. This will require some reference vector (*ID* in the below code) to track which turkey is associated with each observation as well as a vector specifying how many days since the last successful check for each observation (*interval* in the below code.) Alternatively (not shown), you could re-code your model to move through a matrix and supply your encounter history as a matrix. 
 
 ```{r}
 ### Format data to make compatible with model specification
@@ -404,9 +422,8 @@ interval <- as.vector(t(visit_ind))
 interval <- interval[!is.na(interval)]
 ```
 
+These types of decisions will be largely influenced by requirements of the model you are coding and personal coding preference. Regardless, remember that JAGS works with vectors, matrices, and arrays, meaning that any supplied data should not be a data frame or list. The one exception to this is that you will need to wrap individual data components into a single named list which R can interpret and pass along to JAGS. The names in the list should be exactly the same as the corresponding nodes within the model. This will also be the case for parameter monitors and initial values, as shown below. The *parameter monitors* list tells JAGS which parameters we wish to keep track up. This can be useful for large models with many parameters as you may not wish to track all of them. Practically, your computer will have limited memory for storing these values, so MCMC runs for large models with many iterations will require more storage space than if you only monitored a few important parameters.
 
-
-Packaging everything up. As you can see in our model, we are going to need to reformatting of our data to get it into format our model can udnerstand and use. For example, I made a huge mistake when I initially thought up this model and thought of a time varying covariate (weather). These are much harder to code compared to characteristics of an individual or system that dont change between observations. This is specifically difficult because 
 ```{r}
 #Data to supply to the model
 data.list <- list(
@@ -436,41 +453,15 @@ parameters.list <-c(
 #Initial Values
 inits.list <- function(){
   list(
-    base.S = .998 #Set initial value for base survival rate
+    base.S = .99 #Set initial value for base survival rate
   )
 }
 ```
 
-#### Considerations for Run Time
-One of the biggest goals of MCMC analysis is to have the model converge as quickly as possible. [Convergence time will be determined by a number of factors.] There will be many factors affecting run time and many decisions you can make to reduce it. 
+#### Running the Model
+Once everything is formatted and packaged, we can use the function jags() from R2jags to perform the MCMC simulations. 
 
-**Number of parameters to estimate** - [More nodes means more combinations means more simulations?]  
-  
-**Data Size** - [Amount of data you have will ]  
-  
-**Iterations** - [Longer simulations = bigger sample size esentially] 
-  
-**Burn In Period** - [Model needs time to find a stable equilibrium]    
-
-**Thinning** - [Initially used to help with autocorrelation, but arguments against thinning...wasted data]  
-
-**Number of Chains** -   
-  
-**Parallel Processing** -  Depending 
-
-**Initial Values** - [Starting Closer to posterior maximum can aid in convergence]
-
-[These decisions will be consistent across coding options, although implimentation may differ.]
-
-
-#### Running the Model  
 ```{r}
-#Make final MCMC related decisions
-ni <- 2000 #Iterations
-nb <- 1000 #Burn-In
-nt <- 1 #Thinning
-nc <- 3 #Chains
-
 #Run the model
 Surv_JAGS_output <- R2jags::jags(data = data.list,
                          parameters.to.save = parameters.list,
@@ -482,9 +473,13 @@ Surv_JAGS_output <- R2jags::jags(data = data.list,
                          n.chains = nc) 
 ```
 #### Common Errors
-[Heather Gaya GitHub](https://github.com/heathergaya/JAGS-NIMBLE-Tutorials/tree/master/JAGS_Errors)
+This is usually the point where, if you made a mistake, you will be met with error messages. As types of errors are numerous and often times difficult to diagnose, below are a few links to lists of common error messages you will see and potential solutions, as identified by experienced modelers. While you will almost always end up searching Google for error messages, it can be useful to familiarize yourself with these common errors so that you know the "general location" of the issue which will be a huge step in diagnosing and resolving issues.
 
-#### Model Diagnostics and Reporting Results (JAGS)
+[Heather Gaya - Jags Error Messages](https://github.com/heathergaya/JAGS-NIMBLE-Tutorials/blob/master/JAGS_Errors/JAGS_Error_Messages.pdf)  
+[Brian Reich - Understanding error messages in JAGS](https://www4.stat.ncsu.edu/~bjreich/BSMdata/errors.html)
+[Denis Valle - Common problems when using JAGS](https://drvalle1.github.io/99_jags_problems_bad_data.html)
+
+### Model Diagnostics and Reporting Results
 [Different components of the output object]
 
 [Trace Plots]
@@ -530,15 +525,6 @@ Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model unti
 [Posterior Distribution]
 
 Aside: This seems like a relevant time to bring up an important note about interpreting results from logistic regressions, specifically differentiating between **absolute** and **relative** effects. Relative effects refer to the logit link estimate of a beta coefficient and gives the **proportional change in odds** of an outcome.  Absolute effects refer to differences in the final probabilities being estimated and will depend on the entire regression formula. I will point readers to chapter 10 of *Statistical Rethinking* for a more in depth discussion and examples of these two. I bring it up now because we are dealing with effects acting on a event that already has ~99% chance of occurring (surviving a single day). When applying logisitic regression to events that happen with great regularity or extremely rarely, it is often best to evaluate both the relative and absolute differences in the outcome. This is because near these limits (0,1) there is less room for loss/growth and therefore a greater range of values can explain the observed differences in the rate of an outcome. 
-
-### Alternative MCMC Samplers
-[What is different about NIMBLE] [Coding similarities/differences]
-
-
-
-
-
-
 
 ### Comparing Bayesian and Frequentist Approaches
 So you may be thinking, "if its so easy to do this using a Frequentist framework, why in the world did you make me do this long exercise?!."  
