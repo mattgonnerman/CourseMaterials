@@ -22,9 +22,9 @@ lapply(c("dplyr",
 [Describing Our Model System]  
 [Building Our Survival Model]  
 [From Model to Code]  
-[Simulating Our Model System]
-[Running the Model in JAGS: Sampling from the Posterior] 
-[Model Diagnostics and Reporting Results]
+[Simulating Our Model System]  
+[Running the Model in JAGS: Sampling from the Posterior]  
+[Model Diagnostics and Reporting Results]  
 [Comparing Bayesian and Frequentist Approaches]  
 [Sources and Other Resources]  
 
@@ -37,7 +37,28 @@ This exercise is meant as an introductory point for you to learn about the theor
 3) Compare methods and results from a Bayesian and Frequentist approach to help show when each framework is most appropriate to use.  
  </div>
 
+#### Prepare the R Environment
+Before we get started, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
 
+```{r, eval = F}
+install.packages("dplyr", "gtools", "R2jags", "RMark")
+lapply(c("dplyr", #Data management
+         "gtools", #Easy link functions
+         "R2jags", "RMark"), #Running models
+       require, #Function called to load packages
+       character.only = T) #Necessary for lapply functionality
+```
+
+In addition to making sure packages are loaded, we will also want to ensure that the programs we are using are correctly installed and communicating with R. We will be using 2 programs for this lesson; [JAGS](https://mcmc-jags.sourceforge.io/) and [MARK](http://www.phidot.org/software/mark/). These programs interact with R2Jags and RMark respectively to run the models we will supply. If not already installed on your computer, you can follow the links provided, navigate to the installation pages and follow the instructions to get these programs installed. Often times, if there are issues with this step, it is because the program was installed in an non-standard location (e.g., "C:\\Program Files").
+
+This is also a good place to share some unsolicited advice which I received too late in my graduate career. Before you actually start coding, stop to think through the organization and workflow of your project, from data collection through assessing model results. Then, identify the major steps to implementing your code and consider breaking up your R script into sections that reflect these steps. Even with extensive comments, having 100's of lines of code within a single script can make reading code and diagnosing issues very difficult. By breaking up and sourcing our scripts like this, we can better create manageable chunks of code that are well organized and easily referenced. For example, here is how I usually break up and source my code, although I often times have even more divisions within each section depending on what I am doing.   
+```{r eval = F}
+source("1 - DataManagementCode.R")
+source("2 - JAGSModelCode.R")
+source("3 - RunJAGSCode.R")
+source("4 - SummarizeOutput.R")
+source("5 - CreateFigures.R")
+```
 
 ### Bayes Theorem
 Before we begin any actual analysis, let's briefly introduce the foundational equation behind Bayesian statistics, called **Bayes Theorem**. Assume there is a study system which is experiencing some relationship which we wish to approximate. Let the unknown effects defining the relationship and any associated uncertainty be represented by $\theta$ and any information we collect to describe the effect be represented as *y*. We wish to ask what are the most likely values for $\theta$ given *y*, otherwise written as $Pr(\theta|y)$. We can approach this question by considering the joint probability of *y* and $\theta$ occurring together, otherwise written as $P(y, \theta)$. This probability can be rewritten using basic rules of conditional probability as shown below...   
@@ -204,30 +225,6 @@ JAGS.turkey.S.model <- function(){
     obs.S[j] ~ dbern(period.S[j]) # Observation process follows bernoulli distribution
   }
 }
-```
-
-
-#### Prepare the R Environment
-Now that we have a model, we can test how well it approximates survival by simulating some data and running it in R. To do this, let's first ensure the R environment has the necessary tools. We will first install, update, and load the packages we will use throughout our code. Just as a reminder, **if you are already working on other R coding projects, updating packages can have cascading effects on code functionality.** If these packages are already installed and have relatively recently been updated, then you are fine to skip this step.  I only add this reminder as many people will go to install/update packages, causing their functioning code to suddenly stop working, leading to an understandable freak out. Luckily, your code is most likely not broken, you will just have to determine which functions were updated and adjust your code to match the new functionality. 
-
-```{r, eval = F}
-install.packages("dplyr", "gtools", "R2jags", "RMark")
-lapply(c("dplyr", #Data management
-         "gtools", #Easy link functions
-         "R2jags", "RMark"), #Running models
-       require, #Function called to load packages
-       character.only = T) #Necessary for lapply functionality
-```
-
-In addition to making sure packages are loaded, we will also want to ensure that the programs we are using are correctly installed and communicating with R. We will be using 2 programs for this lesson; [JAGS](https://mcmc-jags.sourceforge.io/) and [MARK](http://www.phidot.org/software/mark/). These programs interact with R2Jags and RMark respectively to run the models we will supply. If not already installed on your computer, you can follow the links provided, navigate to the installation pages and follow the instructions to get these programs installed. Often times, if there are issues with this step, it is because the program was installed in an non-standard location (e.g., "C:\\Program Files").
-
-This is also a good place to share some unsolicited advice which I received too late in my graduate career. Before you actually start coding, stop to think through the organization and workflow of your project, from data collection through assessing model results. Then, identify the major steps to implementing your code and consider breaking up your R script into sections that reflect these steps. Even with extensive comments, having 100's of lines of code within a single script can make reading code and diagnosing issues very difficult. By breaking up and sourcing our scripts like this, we can better create manageable chunks of code that are well organized and easily referenced. For example, here is how I usually break up and source my code, although I often times have even more divisions within each section depending on what I am doing.   
-```{r eval = F}
-source("1 - DataManagementCode.R")
-source("2 - JAGSModelCode.R")
-source("3 - RunJAGSCode.R")
-source("4 - SummarizeOutput.R")
-source("5 - CreateFigures.R")
 ```
 
 ### Simulating Our Model System
@@ -461,7 +458,7 @@ inits.list <- function(){
 #### Running the Model
 Once everything is formatted and packaged, we can use the function jags() from R2jags to perform the MCMC simulations. 
 
-```{r}
+```{r, message = F}
 #Run the model
 Surv_JAGS_output <- R2jags::jags(data = data.list,
                          parameters.to.save = parameters.list,
@@ -476,32 +473,46 @@ Surv_JAGS_output <- R2jags::jags(data = data.list,
 This is usually the point where, if you made a mistake, you will be met with error messages. As types of errors are numerous and often times difficult to diagnose, below are a few links to lists of common error messages you will see and potential solutions, as identified by experienced modelers. While you will almost always end up searching Google for error messages, it can be useful to familiarize yourself with these common errors so that you know the "general location" of the issue which will be a huge step in diagnosing and resolving issues.
 
 [Heather Gaya - Jags Error Messages](https://github.com/heathergaya/JAGS-NIMBLE-Tutorials/blob/master/JAGS_Errors/JAGS_Error_Messages.pdf)  
-[Brian Reich - Understanding error messages in JAGS](https://www4.stat.ncsu.edu/~bjreich/BSMdata/errors.html)
-[Denis Valle - Common problems when using JAGS](https://drvalle1.github.io/99_jags_problems_bad_data.html)
+[Brian Reich - Understanding error messages in JAGS](https://www4.stat.ncsu.edu/~bjreich/BSMdata/errors.html)  
+[Denis Valle - Common problems when using JAGS](https://drvalle1.github.io/99_jags_problems_bad_data.html)  
 
 ### Model Diagnostics and Reporting Results
-[Different components of the output object]
+Once JAGS has completed its simulations, you will be returned an object which you can use for model diagnostics and potentially running additional simulations if it failed to converge. The ways in which these results and diagnostics can be performed and reported are numerous, so we will only cover the most common methods used. 
 
-[Trace Plots]
-```{r}
-traceplot(Surv_JAGS_output, #bugs output object
-          mfrow = c(3,2), #Rows and Columns in figure
-          ask = F, #Ask before plotting?
-          varname = c("b.ag", "b.for", "b.bc")) #Which parameters to plot
-```
-
-```{r}
+The first thing you will probably want to do once a model is done running is look at the estimates to see if they are reasonable. To extract posterior estimates with confidence intervals, you can either directly print values from the JAGS object...
+```{r, results=F}
 #Basic Parameter Estimates
 print(Surv_JAGS_output)
 ```
 
-If we want to run a more in-depth diagnostics of our model, it can be useful to extract the actual MCMC chains. This allows for the running of various diagnostic functions.
+or you can extract the individual chains for more direct interpretation and diagnostics. The only difference being that the below option provides a simpler object format from which to call samples and produce figures and estimates.
+
 ```{r}
 #Convert BUGS output into MCMC for further information and plotting options
 Surv_JAGS_MCMC <- as.mcmc(Surv_JAGS_output)
 summary(Surv_JAGS_MCMC)
-
 ```
+
+#### Visualizing Results
+There are a few common plots that I will introduce here which are regularly reported with results or used for diagnostics
+
+**Posterior Density Plots** - This is simply a density plot showing where the sampler spent its time along a posterior distribution. The more time spent in an area, the greater the probability that value is the true value. Density plots are a simple way to portray a wide range of information relevant to model performance. From these plots we can see where the chains were maximized, what the confidence intervals are, as well as whether the overall shape of the posterior distribution. It is important to remember that, with increased complexity and more factors influencing a given parameter, the more likely it will be that the posterior will not conform to a particular distribution. 
+
+```{r}
+lattice::densityplot(Surv_JAGS_MCMC)
+```
+
+Aside: This is a relevant point to bring up an important note about interpreting results from logistic regressions, specifically differentiating between **absolute** and **relative** effects. Relative effects refer to the logit link estimate of a beta coefficient and gives the **proportional change in odds** of an outcome.  Absolute effects refer to differences in the final probabilities being estimated and will depend on the entire regression formula. I will point readers to chapter 10 of *Statistical Rethinking* for a more in depth discussion and examples of these two. I bring it up now because we are dealing with effects acting on a event that already has ~99% chance of occurring (surviving a single day). When applying logisitic regression to events that happen with great regularity or extremely rarely, it is often best to evaluate both the relative and absolute differences in the outcome. This is because near these limits (0,1) there is less room for loss/growth and therefore a greater range of values can explain the observed differences in the rate of an outcome.
+
+**Trace Plots** - We can also examine the individual MCMC chains to assess model convergence. For example, if a chain has reached a stable equilibrium, we would not expect the distribution of points to change across the length of a chain. For example, if samples are autocorrelated, you will see a distinct progression of values rather than the random up and down that we would hope to see. This may be difficult to interpret sometimes, but a good general rule is if you can draw a line through the center of the trace plot and never or rarely cross open space, then its possible your model has converged (I have heard many terms for the shape to look for in a trace plot, but my favorite is the "fuzzy caterpillar").
+```{r}
+traceplot(Surv_JAGS_output, #bugs output object
+          mfrow = c(3,2), #Rows and Columns in figure
+          ask = F, #Ask before plotting?
+          varname = c("a.S", "b.ag", "b.for", "b.bc")) #Which parameters to plot
+```
+
+More in depth options for model diagnostics exist, but I will only present a few below for you to explore yourself. 
 
 ```{r, eval = F}
 require(coda)
@@ -511,20 +522,14 @@ heidel.diag(Surv_JAGS_MCMC)
 ```
 
 #### Failure to Converge
-[Before rewriting your model, it may be worth first adjusting MCMC options] [Interations/BurnIn time] [Starting Values]
+Should your model fail to converge absent any error messages, you will have several options to choose from. If there is something fundamentally wrong with your analysis, you will need to adjust your model code, data, or initial values and rerun the MCMC simulations. However, it is also possible that you just didn't allow the simulations to run long enough to reach a stable equilibrium yet. In such a case, it may be more about adjusting the number of iterations or burn-in period before dramatically altering your model or data. Instead of rerunning the entire model, you could alternatively use the MCMC object that was initially returned by JAGS and continue simulations using the same model, starting where the previous simulations left off. This can be done using either the **update()** or **autojags()** functions, where update() uses a specified number of iterations and autojags() runs until the model achieves adequate convergence for all paramaters. 
 
-https://cran.r-project.org/web/packages/EcoDiet/vignettes/convergence_problems.html
-
-[Using the original MCMC run to continue simulations with the same model]
 ```{r, eval = F}
 Surv_JAGS_update <- update(Surv_JAGS_output, n.iter = 1000) #Continues the same simulation, adding iterations 
 Surv_JAGS_update <- autojags(Surv_JAGS_output) #Automatically updates model until convergence
 ```
 
-#### Evaluating and Presenting Results
-[Posterior Distribution]
 
-Aside: This seems like a relevant time to bring up an important note about interpreting results from logistic regressions, specifically differentiating between **absolute** and **relative** effects. Relative effects refer to the logit link estimate of a beta coefficient and gives the **proportional change in odds** of an outcome.  Absolute effects refer to differences in the final probabilities being estimated and will depend on the entire regression formula. I will point readers to chapter 10 of *Statistical Rethinking* for a more in depth discussion and examples of these two. I bring it up now because we are dealing with effects acting on a event that already has ~99% chance of occurring (surviving a single day). When applying logisitic regression to events that happen with great regularity or extremely rarely, it is often best to evaluate both the relative and absolute differences in the outcome. This is because near these limits (0,1) there is less room for loss/growth and therefore a greater range of values can explain the observed differences in the rate of an outcome. 
 
 ### Comparing Bayesian and Frequentist Approaches
 So you may be thinking, "if its so easy to do this using a Frequentist framework, why in the world did you make me do this long exercise?!."  
